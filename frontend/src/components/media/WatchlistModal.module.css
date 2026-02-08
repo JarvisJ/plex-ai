@@ -1,0 +1,78 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background-color: var(--color-bg-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-xl);
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+}
+
+.title {
+  margin: 0 0 var(--spacing-lg);
+  font-size: var(--font-xl);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.loadingText {
+  color: var(--color-text-muted);
+  margin: var(--spacing-lg) 0;
+}
+
+.errorText {
+  color: var(--color-error);
+  margin: var(--spacing-lg) 0;
+}
+
+.statusText {
+  color: var(--color-text-secondary);
+  margin: 0 0 20px;
+}
+
+.actions {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.primaryButton {
+  flex: 1;
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  background-color: var(--color-accent);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.primaryButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.primaryButton.remove {
+  background-color: var(--color-danger);
+}
+
+.closeButton {
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  background-color: var(--color-bg-tertiary);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}

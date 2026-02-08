@@ -1,0 +1,28 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.title {
+  font-size: var(--font-3xl);
+  margin-bottom: 1rem;
+  color: var(--color-accent);
+}
+
+.subtitle {
+  margin-bottom: 2rem;
+  color: var(--color-text-muted);
+  text-align: center;
+  max-width: 400px;
+}
+
+.error {
+  margin-top: 1rem;
+  color: var(--color-error);
+}
