@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import auth_router, media_router
+from app.routers import agent_router, auth_router, media_router
 
 app = FastAPI(title="Plex API", version="0.1.0")
 
@@ -14,6 +14,7 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(agent_router)
 app.include_router(auth_router)
 app.include_router(media_router)
 

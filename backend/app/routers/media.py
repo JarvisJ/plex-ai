@@ -89,8 +89,21 @@ async def get_thumbnail(
     server_name: str,
     path: str,
     plex_client: PlexClientService = Depends(get_plex_client_flexible),
+    cache: CacheService = Depends(get_cache_service),
 ) -> Response:
-    """Proxy a thumbnail image from the Plex server."""
+    """Proxy a thumbnail image from the Plex server with shared caching."""
+    # Create a shared cache key (not user-specific since thumbnails are the same for everyone)
+    cache_key = cache._make_shared_key("thumb", server_name, path)
+
+    # Check cache first
+    cached_data = cache.get_binary(cache_key)
+    if cached_data is not None:
+        return Response(
+            content=cached_data,
+            media_type="image/jpeg",
+            headers={"Cache-Control": "public, max-age=86400", "X-Cache": "HIT"},
+        )
+
     try:
         thumbnail_url = await asyncio.to_thread(
             plex_client.get_thumbnail_url, server_name, path
@@ -98,10 +111,16 @@ async def get_thumbnail(
         async with httpx.AsyncClient(verify=False) as client:
             response = await client.get(thumbnail_url, timeout=30)
             response.raise_for_status()
+
+            # Cache the thumbnail (shared across all users)
+            content = response.content
+            content_type = response.headers.get("content-type", "image/jpeg")
+            cache.set_binary(cache_key, content)
+
             return Response(
-                content=response.content,
-                media_type=response.headers.get("content-type", "image/jpeg"),
-                headers={"Cache-Control": "public, max-age=86400"},
+                content=content,
+                media_type=content_type,
+                headers={"Cache-Control": "public, max-age=86400", "X-Cache": "MISS"},
             )
     except Exception as e:
         logger.exception("Failed to get thumbnail")

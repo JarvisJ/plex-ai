@@ -89,4 +89,5 @@ async def get_current_user(
 ) -> UserInfo:
     """Get the current authenticated user's information."""
     user_data = await auth_service.get_user_info(plex_token)
-    return UserInfo(**user_data)
+    client_identifier = await auth_service.get_owned_server_identifier(plex_token)
+    return UserInfo(**user_data, client_identifier=client_identifier)

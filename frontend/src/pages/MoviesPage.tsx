@@ -1,13 +1,16 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useLibraryItems } from '../hooks/useMediaItems';
 import { MediaGrid } from '../components/media/MediaGrid';
+import { AgentPanel, AgentToggle } from '../components/agent';
 import styles from './MediaPage.module.css';
 
 export function MoviesPage() {
   const { libraryKey } = useParams<{ libraryKey: string }>();
   const [searchParams] = useSearchParams();
   const serverName = searchParams.get('server');
+  const clientIdentifier = searchParams.get('machine');
+  const [isAgentOpen, setIsAgentOpen] = useState(false);
 
   const {
     data,
@@ -39,12 +42,21 @@ export function MoviesPage() {
         <MediaGrid
           items={items}
           serverName={serverName}
+          clientIdentifier={clientIdentifier}
           isLoading={isLoading}
           hasMore={hasNextPage}
           onLoadMore={() => fetchNextPage()}
           isFetchingMore={isFetchingNextPage}
         />
       </main>
+
+      <AgentToggle onClick={() => setIsAgentOpen(true)} />
+      <AgentPanel
+        isOpen={isAgentOpen}
+        onClose={() => setIsAgentOpen(false)}
+        serverName={serverName}
+        clientIdentifier={clientIdentifier}
+      />
     </div>
   );
 }

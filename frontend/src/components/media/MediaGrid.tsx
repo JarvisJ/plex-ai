@@ -5,6 +5,7 @@ import styles from './MediaGrid.module.css';
 interface MediaGridProps {
   items: MediaItem[];
   serverName?: string | null;
+  clientIdentifier?: string | null;
   isLoading?: boolean;
   hasMore?: boolean;
   onLoadMore?: () => void;
@@ -14,6 +15,7 @@ interface MediaGridProps {
 export function MediaGrid({
   items,
   serverName,
+  clientIdentifier,
   isLoading,
   hasMore,
   onLoadMore,
@@ -31,7 +33,7 @@ export function MediaGrid({
     <div>
       <div className={styles.grid}>
         {items.map((item) => (
-          <MediaCard key={item.rating_key} item={item} serverName={serverName} />
+          <MediaCard key={item.rating_key} item={item} serverName={serverName} clientIdentifier={clientIdentifier} />
         ))}
       </div>
 

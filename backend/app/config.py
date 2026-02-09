@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     cache_ttl_seconds: int = 60 * 60 * 24 * 7  # 1 week
 
+    # LLM settings
+    openai_api_key: str = ""
+    llm_model: str = "gpt-4o-mini"
+
 
 @lru_cache
 def get_settings() -> Settings:

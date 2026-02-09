@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useServers, useLibraries, getServerName } from '../hooks/useMediaItems';
 import { clearCache } from '../api/media';
 import type { Library } from '../api/media';
+import { AgentPanel, AgentToggle } from '../components/agent';
 import styles from './DashboardPage.module.css';
 
 export function DashboardPage() {
@@ -13,6 +14,7 @@ export function DashboardPage() {
   const queryClient = useQueryClient();
   const { data: servers, isLoading: serversLoading, error: serversError } = useServers();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isAgentOpen, setIsAgentOpen] = useState(false);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -99,6 +101,7 @@ export function DashboardPage() {
                       key={library.key}
                       library={library}
                       serverName={serverName!}
+                      clientIdentifier={selectedServer!.client_identifier}
                     />
                   ))}
                 </div>
@@ -114,6 +117,7 @@ export function DashboardPage() {
                       key={library.key}
                       library={library}
                       serverName={serverName!}
+                      clientIdentifier={selectedServer!.client_identifier}
                     />
                   ))}
                 </div>
@@ -126,6 +130,14 @@ export function DashboardPage() {
           </div>
         )}
       </main>
+
+      <AgentToggle onClick={() => setIsAgentOpen(true)} />
+      <AgentPanel
+        isOpen={isAgentOpen}
+        onClose={() => setIsAgentOpen(false)}
+        serverName={serverName}
+        clientIdentifier={selectedServer?.client_identifier ?? null}
+      />
     </div>
   );
 }
@@ -133,13 +145,14 @@ export function DashboardPage() {
 interface LibraryCardProps {
   library: Library;
   serverName: string;
+  clientIdentifier: string;
 }
 
-function LibraryCard({ library, serverName }: LibraryCardProps) {
+function LibraryCard({ library, serverName, clientIdentifier }: LibraryCardProps) {
   const linkPath =
     library.type === 'movie'
-      ? `/movies/${library.key}?server=${encodeURIComponent(serverName)}`
-      : `/shows/${library.key}?server=${encodeURIComponent(serverName)}`;
+      ? `/movies/${library.key}?server=${encodeURIComponent(serverName)}&machine=${encodeURIComponent(clientIdentifier)}`
+      : `/shows/${library.key}?server=${encodeURIComponent(serverName)}&machine=${encodeURIComponent(clientIdentifier)}`;
 
   return (
     <Link to={linkPath} className={styles.libraryCard}>

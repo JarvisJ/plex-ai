@@ -104,6 +104,35 @@ class PlexAuthService:
                 "thumb": data.get("thumb"),
             }
 
+    async def get_owned_server_identifier(self, plex_token: str) -> str | None:
+        """Get the client identifier of the user's owned Plex server.
+
+        Args:
+            plex_token: The Plex auth token
+
+        Returns:
+            The client identifier of the first owned server, or None if no owned server exists
+        """
+        headers = {**self._headers, "X-Plex-Token": plex_token}
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{self.PLEX_API_URL}/resources",
+                headers=headers,
+            )
+            response.raise_for_status()
+            resources = response.json()
+
+            # Find the first owned Plex Media Server
+            for resource in resources:
+                if (
+                    resource.get("product") == "Plex Media Server"
+                    and resource.get("owned")
+                ):
+                    client_id: str | None = resource.get("clientIdentifier")
+                    return client_id
+
+            return None
+
     def create_session_token(self, plex_token: str, user_id: int, username: str) -> str:
         """Create a JWT session token containing the Plex token.
 
