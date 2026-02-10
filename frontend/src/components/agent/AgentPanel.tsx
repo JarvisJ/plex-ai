@@ -11,8 +11,17 @@ interface AgentPanelProps {
   clientIdentifier: string | null;
 }
 
+const TOOL_NAMES: Record<string, string> = {
+  search_library: 'Searching library',
+  get_recommendations: 'Finding recommendations',
+  get_unwatched: 'Finding unwatched items',
+  get_recently_added: 'Checking recent additions',
+  get_media_details: 'Getting details',
+  get_library_stats: 'Getting library stats',
+};
+
 export function AgentPanel({ isOpen, onClose, serverName, clientIdentifier }: AgentPanelProps) {
-  const { messages, isLoading, error, sendMessage, reset } = useAgent(serverName);
+  const { messages, isLoading, error, currentTool, sendMessage, reset } = useAgent(serverName);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -93,10 +102,10 @@ export function AgentPanel({ isOpen, onClose, serverName, clientIdentifier }: Ag
               />
             ))
           )}
-          {isLoading && (
+          {isLoading && currentTool && (
             <div className={styles.loading}>
               <div className={styles.spinner} />
-              <span>Thinking...</span>
+              <span>{TOOL_NAMES[currentTool] || currentTool}...</span>
             </div>
           )}
           {error && <div className={styles.error}>{error}</div>}
@@ -154,7 +163,10 @@ function MessageBubble({ message, serverName, clientIdentifier }: MessageBubbleP
         {isUser ? (
           message.content
         ) : (
-          <Markdown>{message.content}</Markdown>
+          <>
+            <Markdown>{message.content}</Markdown>
+            {message.isStreaming && <span className={styles.cursor}>|</span>}
+          </>
         )}
       </div>
       {message.mediaItems.length > 0 && (

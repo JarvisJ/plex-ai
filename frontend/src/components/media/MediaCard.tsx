@@ -3,6 +3,7 @@ import { getThumbnailUrl } from "../../api/media";
 import type { MediaItem } from "../../api/media";
 import { useWatchlist } from "../../contexts/WatchlistContext";
 import { useCachedThumbnail } from "../../hooks/useCachedThumbnail";
+import { useIntersectionObserver } from "../../hooks/useIntersectionObserver";
 import { WatchlistModal } from "./WatchlistModal";
 import styles from "./MediaCard.module.css";
 
@@ -20,9 +21,14 @@ export function MediaCard({ item, serverName, clientIdentifier }: MediaCardProps
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { isOnWatchlist } = useWatchlist();
   const onWatchlist = isOnWatchlist(item.guid);
+  const [cardRef, isVisible] = useIntersectionObserver<HTMLDivElement>({
+    rootMargin: '200px',
+    triggerOnce: true,
+  });
 
+  // Only compute thumbnail URL when visible
   const thumbUrl =
-    item.thumb && serverName ? getThumbnailUrl(serverName, item.thumb) : null;
+    isVisible && item.thumb && serverName ? getThumbnailUrl(serverName, item.thumb) : null;
   const { src: cachedThumbUrl, isLoading: isThumbLoading } = useCachedThumbnail(thumbUrl);
   const rating = item.rating
     ? PERCENT_FORMATTER.format(item.rating / 10)
@@ -44,7 +50,7 @@ export function MediaCard({ item, serverName, clientIdentifier }: MediaCardProps
   };
 
   return (
-    <div className={styles.card}>
+    <div ref={cardRef} className={styles.card}>
       <div className={styles.imageContainer}>
         {thumbUrl ? (
           isThumbLoading ? (

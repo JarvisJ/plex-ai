@@ -1,18 +1,26 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '../hooks/useAuth';
-import { useServers, useLibraries, getServerName } from '../hooks/useMediaItems';
-import { clearCache } from '../api/media';
-import type { Library } from '../api/media';
-import { AgentPanel, AgentToggle } from '../components/agent';
-import styles from './DashboardPage.module.css';
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "../hooks/useAuth";
+import {
+  useServers,
+  useLibraries,
+  getServerName,
+} from "../hooks/useMediaItems";
+import { clearCache } from "../api/media";
+import type { Library } from "../api/media";
+import { AgentPanel, AgentToggle } from "../components/agent";
+import styles from "./DashboardPage.module.css";
 
 export function DashboardPage() {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: servers, isLoading: serversLoading, error: serversError } = useServers();
+  const {
+    data: servers,
+    isLoading: serversLoading,
+    error: serversError,
+  } = useServers();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isAgentOpen, setIsAgentOpen] = useState(false);
 
@@ -22,7 +30,7 @@ export function DashboardPage() {
       await clearCache();
       await queryClient.invalidateQueries();
     } catch (error) {
-      console.error('Failed to refresh cache:', error);
+      console.error("Failed to refresh cache:", error);
     } finally {
       setIsRefreshing(false);
     }
@@ -31,20 +39,22 @@ export function DashboardPage() {
   const firstServer = servers?.[0] ?? null;
   const [selectedServerId, setSelectedServerId] = useState<string | null>(null);
   const selectedServer = selectedServerId
-    ? servers?.find((s) => s.client_identifier === selectedServerId) ?? firstServer
+    ? servers?.find((s) => s.client_identifier === selectedServerId) ??
+      firstServer
     : firstServer;
 
   const serverName = selectedServer ? getServerName(selectedServer) : null;
-  const { data: libraries, isLoading: librariesLoading } = useLibraries(serverName);
+  const { data: libraries, isLoading: librariesLoading } =
+    useLibraries(serverName);
 
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate('/');
+      navigate("/");
     }
   }, [isAuthenticated, navigate]);
 
-  const movieLibraries = libraries?.filter((lib) => lib.type === 'movie') || [];
-  const showLibraries = libraries?.filter((lib) => lib.type === 'show') || [];
+  const movieLibraries = libraries?.filter((lib) => lib.type === "movie") || [];
+  const showLibraries = libraries?.filter((lib) => lib.type === "show") || [];
 
   return (
     <div className={styles.container}>
@@ -57,7 +67,7 @@ export function DashboardPage() {
             disabled={isRefreshing}
             className={styles.headerButton}
           >
-            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            {isRefreshing ? "Refreshing..." : "Refresh Content Cache"}
           </button>
           <button onClick={logout} className={styles.headerButton}>
             Logout
@@ -66,29 +76,38 @@ export function DashboardPage() {
       </header>
 
       <main className={styles.main}>
-        {serversLoading && <p className={styles.loadingText}>Loading servers...</p>}
+        {serversLoading && (
+          <p className={styles.loadingText}>Loading servers...</p>
+        )}
         {serversError && (
-          <p className={styles.errorText}>Failed to load servers. Please try again.</p>
+          <p className={styles.errorText}>
+            Failed to load servers. Please try again.
+          </p>
         )}
 
         {servers && servers.length > 1 && (
           <div className={styles.serverSelector}>
             <label className={styles.serverLabel}>Select Server</label>
             <select
-              value={selectedServer?.client_identifier || ''}
+              value={selectedServer?.client_identifier || ""}
               onChange={(e) => setSelectedServerId(e.target.value)}
               className={styles.serverSelect}
             >
               {servers.map((server) => (
-                <option key={server.client_identifier} value={server.client_identifier}>
-                  {server.name} {server.local ? '(Local)' : ''}
+                <option
+                  key={server.client_identifier}
+                  value={server.client_identifier}
+                >
+                  {server.name} {server.local ? "(Local)" : ""}
                 </option>
               ))}
             </select>
           </div>
         )}
 
-        {librariesLoading && <p className={styles.loadingText}>Loading libraries...</p>}
+        {librariesLoading && (
+          <p className={styles.loadingText}>Loading libraries...</p>
+        )}
 
         {!librariesLoading && (
           <div className={styles.librariesGrid}>
@@ -125,7 +144,9 @@ export function DashboardPage() {
             )}
 
             {movieLibraries.length === 0 && showLibraries.length === 0 && (
-              <p className={styles.emptyText}>No libraries found on this server.</p>
+              <p className={styles.emptyText}>
+                No libraries found on this server.
+              </p>
             )}
           </div>
         )}
@@ -148,18 +169,26 @@ interface LibraryCardProps {
   clientIdentifier: string;
 }
 
-function LibraryCard({ library, serverName, clientIdentifier }: LibraryCardProps) {
+function LibraryCard({
+  library,
+  serverName,
+  clientIdentifier,
+}: LibraryCardProps) {
   const linkPath =
-    library.type === 'movie'
-      ? `/movies/${library.key}?server=${encodeURIComponent(serverName)}&machine=${encodeURIComponent(clientIdentifier)}`
-      : `/shows/${library.key}?server=${encodeURIComponent(serverName)}&machine=${encodeURIComponent(clientIdentifier)}`;
+    library.type === "movie"
+      ? `/movies/${library.key}?server=${encodeURIComponent(
+          serverName
+        )}&machine=${encodeURIComponent(clientIdentifier)}`
+      : `/shows/${library.key}?server=${encodeURIComponent(
+          serverName
+        )}&machine=${encodeURIComponent(clientIdentifier)}`;
 
   return (
     <Link to={linkPath} className={styles.libraryCard}>
       <h3 className={styles.libraryTitle}>{library.title}</h3>
       {library.count !== null && (
         <p className={styles.libraryCount}>
-          {library.count} {library.type === 'movie' ? 'movies' : 'shows'}
+          {library.count} {library.type === "movie" ? "movies" : "shows"}
         </p>
       )}
     </Link>

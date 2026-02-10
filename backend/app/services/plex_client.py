@@ -269,6 +269,53 @@ class PlexClientService:
             on_watchlist=False,
         )
 
+    def get_all_library_items(
+        self,
+        server_name: str,
+        media_type: str | None = None,
+    ) -> list[MediaItem]:
+        """Get all items from all libraries with caching.
+
+        This is used by the AI agent to search/filter the user's full library.
+        Results are cached for performance.
+
+        Args:
+            server_name: Name of the Plex server
+            media_type: Optional filter for 'movie' or 'show'
+
+        Returns:
+            List of all media items matching the criteria
+        """
+        user_id = self._get_user_id()
+        cache_key = self.cache._make_key(
+            "all_library_items", user_id, server_name, media_type or "all"
+        )
+
+        cached = self.cache.get(cache_key)
+        if cached is not None:
+            return [
+                MediaItem(**item) if isinstance(item, dict) else item for item in cached
+            ]
+
+        server = self._connect_to_server(server_name)
+        all_items: list[MediaItem] = []
+
+        for section in server.library.sections():
+            if section.type not in ("movie", "show"):
+                continue
+            if media_type and section.type != media_type:
+                continue
+
+            # Get all items from this section
+            for item in section.all():
+                media_item = self._convert_to_media_item(item)
+                if media_item:
+                    all_items.append(media_item)
+
+        # Cache with longer TTL since full library scan is expensive
+        self.cache.set(cache_key, all_items, ttl=604800)  # 1 week
+        return all_items
+
     def get_watchlist(self) -> list[WatchlistItem]:
         """Get all items on the user's watchlist."""
         user_id = self._get_user_id()

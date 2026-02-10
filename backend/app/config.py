@@ -5,7 +5,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
 
     plex_client_identifier: str = str(uuid.uuid4())
     plex_product_name: str = "Plex Media Dashboard"
@@ -18,7 +20,7 @@ class Settings(BaseSettings):
 
     # LLM settings
     openai_api_key: str = ""
-    llm_model: str = "gpt-4o-mini"
+    llm_model: str = "gpt-5.1"  # ß "gpt-4o-mini"
 
 
 @lru_cache
