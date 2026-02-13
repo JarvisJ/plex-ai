@@ -121,3 +121,21 @@
   font-size: var(--font-xs);
   color: var(--color-text-secondary);
 }
+
+.watchButton {
+  display: block;
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-accent);
+  color: #fff;
+  text-align: center;
+  text-decoration: none;
+  font-size: var(--font-sm);
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  transition: background-color var(--transition-fast);
+}
+
+.watchButton:hover {
+  background-color: var(--color-accent-hover);
+}

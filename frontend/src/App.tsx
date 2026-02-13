@@ -3,8 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { WatchlistProvider } from './contexts/WatchlistContext';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
-import { MoviesPage } from './pages/MoviesPage';
-import { ShowsPage } from './pages/ShowsPage';
+import { MoviesPage, ShowsPage } from './pages/LibraryPage';
 import './App.css';
 
 const queryClient = new QueryClient({

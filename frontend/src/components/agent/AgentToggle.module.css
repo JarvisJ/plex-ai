@@ -1,0 +1,29 @@
+.toggle {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background-color: var(--color-accent);
+  border: none;
+  color: #000;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 3px 4px 11px 1px rgba(255, 255, 0, 0.5);
+  transition: transform var(--transition-fast),
+    background-color var(--transition-fast);
+  z-index: 999;
+  height: 100px;
+  width: 200px;
+  border-radius: 20px;
+  right: 20px;
+}
+
+.toggle:hover {
+  transform: scale(1.1);
+  background-color: var(--color-accent-hover);
+}
+
+.toggle:active {
+  transform: scale(0.95);
+}

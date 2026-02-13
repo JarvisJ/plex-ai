@@ -18,6 +18,7 @@ export interface UserInfo {
   username: string;
   email: string | null;
   thumb: string | null;
+  client_identifier: string | null;
 }
 
 export async function createPin(): Promise<PinResponse> {

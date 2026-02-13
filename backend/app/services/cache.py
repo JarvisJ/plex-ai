@@ -34,6 +34,12 @@ class CacheService:
         args_hash = hashlib.md5(args_str.encode()).hexdigest()[:8]
         return f"plex:{prefix}:{user_id}:{args_hash}"
 
+    def _make_shared_key(self, prefix: str, *args: Any) -> str:
+        """Create a shared cache key (not user-specific)."""
+        args_str = json.dumps(args, sort_keys=True, default=str)
+        args_hash = hashlib.md5(args_str.encode()).hexdigest()[:16]
+        return f"plex:{prefix}:shared:{args_hash}"
+
     def get(self, key: str) -> Any | None:
         """Get a value from cache if it exists."""
         value = self._redis.get(key)
@@ -47,6 +53,19 @@ class CacheService:
             ttl = self.settings.cache_ttl_seconds
         serialized = _serialize_value(value)
         self._redis.setex(key, ttl, serialized)
+
+    def get_binary(self, key: str) -> bytes | None:
+        """Get binary data from cache."""
+        # Use a separate Redis client without decode_responses for binary data
+        binary_redis = redis.Redis.from_url(self.settings.redis_url, decode_responses=False)
+        return binary_redis.get(key)  # type: ignore[return-value]
+
+    def set_binary(self, key: str, value: bytes, ttl: int | None = None) -> None:
+        """Set binary data in cache with optional TTL override."""
+        if ttl is None:
+            ttl = self.settings.cache_ttl_seconds
+        binary_redis = redis.Redis.from_url(self.settings.redis_url, decode_responses=False)
+        binary_redis.setex(key, ttl, value)
 
     def delete(self, key: str) -> bool:
         """Delete a specific key from cache."""

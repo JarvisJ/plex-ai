@@ -51,7 +51,7 @@ export interface PaginatedResponse {
 
 export function getThumbnailUrl(serverName: string, thumbPath: string): string {
   const token = localStorage.getItem('auth_token');
-  return `http://localhost:8000/api/media/thumbnail?server_name=${encodeURIComponent(serverName)}&path=${encodeURIComponent(thumbPath)}&token=${encodeURIComponent(token || '')}`;
+  return `/api/media/thumbnail?server_name=${encodeURIComponent(serverName)}&path=${encodeURIComponent(thumbPath)}&token=${encodeURIComponent(token || '')}`;
 }
 
 export async function getServers(): Promise<Server[]> {

@@ -31,3 +31,4 @@ class UserInfo(BaseModel):
     username: str
     email: str | None = None
     thumb: str | None = None
+    client_identifier: str | None = None

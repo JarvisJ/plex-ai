@@ -12,12 +12,18 @@ dependencies = [
     "httpx>=0.27.0",
     "pyjwt>=2.8.0",
     "redis>=5.0.0",
+    "langchain>=1.2.9",
+    "langchain-openai>=1.1.7",
+    "langchain-tavily>=0.2.13",
+    "tavily-python>=0.7.13",
+    "tavily>=1.1.0",    
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
+    "pytest-mock>=3.12.0",
     "httpx>=0.27.0",
     "ruff>=0.2.0",
     "mypy>=1.8.0",

@@ -13,6 +13,23 @@
   gap: var(--spacing-lg);
 }
 
+.virtualContainer {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+.row {
+  display: flex;
+  gap: var(--spacing-lg);
+}
+
+.cell {
+  flex: 1 1 0;
+  min-width: 160px;
+  max-width: 280px;
+}
+
 .loadMoreContainer {
   display: flex;
   justify-content: center;
