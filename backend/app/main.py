@@ -3,11 +3,13 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
+from app.config import get_settings
 from app.routers import agent_router, auth_router, media_router
 
 app = FastAPI(title="Plex API", version="0.1.0")
 
-ALLOWED_ORIGINS = ["http://localhost:5173"]
+_settings = get_settings()
+ALLOWED_ORIGINS = [_settings.frontend_url, "http://localhost:5173"]
 
 
 class CORSMiddleware(BaseHTTPMiddleware):

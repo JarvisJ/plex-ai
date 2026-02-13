@@ -24,8 +24,6 @@ export function MediaGrid({
   clientIdentifier,
   isLoading,
   hasMore,
-  onLoadMore,
-  isFetchingMore,
 }: MediaGridProps) {
   const element = useRef<HTMLDivElement>(null);
   const [columns, setColumns] = useState(1);

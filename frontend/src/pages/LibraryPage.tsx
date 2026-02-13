@@ -5,7 +5,6 @@ import { MediaGrid } from "../components/media/MediaGrid";
 import { LibraryFilters } from "../components/library";
 import { AgentPanel, AgentToggle } from "../components/agent";
 import styles from "./MediaPage.module.css";
-import type { MediaItem } from "../api/media";
 
 interface LibraryPageProps {
   title: string;

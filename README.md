@@ -48,14 +48,21 @@ A full-stack application for browsing and discovering content in your Plex media
 
 ```
 plex/
-├── frontend/          # React + TypeScript application
-│   └── README.md      # Frontend documentation
+├── frontend/          # React + TypeScript application (Vite)
 ├── backend/           # FastAPI Python application
-│   └── README.md      # Backend documentation
+├── deploy/            # Production Docker Compose, nginx, deploy scripts
+│   ├── docker-compose.prod.yaml
+│   ├── nginx/nginx.conf
+│   └── deploy-frontend.sh
+├── infra/             # Terraform AWS infrastructure
+│   ├── main.tf, variables.tf, outputs.tf
+│   ├── s3.tf, cloudfront.tf, ec2.tf
+│   ├── iam.tf, ssm.tf
+│   └── user-data.sh
 └── CLAUDE.md          # AI assistant context file
 ```
 
-## Quick Start
+## Local Development
 
 ### Prerequisites
 
@@ -93,22 +100,96 @@ npm run dev
 
 Navigate to http://localhost:5173 and log in with your Plex account.
 
-## Documentation
+## Production Deployment (AWS)
 
-- [Frontend README](./frontend/README.md) - React application details
-- [Backend README](./backend/README.md) - FastAPI application details
-- [CLAUDE.md](./CLAUDE.md) - AI assistant context and patterns
+The app deploys to AWS with the following architecture:
+
+```
+Browser -> CloudFront (HTTPS)
+             |-- /* -> S3 (frontend static files)
+             |-- /api/* -> EC2 (Elastic IP)
+                             |-- nginx (port 80, reverse proxy)
+                             |-- FastAPI (port 8000, internal)
+                             |-- Redis (port 6379, internal)
+```
+
+### Prerequisites
+
+- AWS CLI configured with credentials
+- Terraform >= 1.5
+- An EC2 key pair in your target region
+
+### 1. Configure Secrets
+
+```bash
+cd infra
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your API keys, key pair name, and GitHub repo URL
+```
+
+### 2. Deploy Infrastructure
+
+```bash
+terraform init
+terraform apply
+```
+
+This creates: S3 bucket, CloudFront distribution, EC2 instance (with Docker Compose), Elastic IP, IAM roles, and SSM parameters for secrets. The EC2 user-data script automatically installs Docker, clones the repo, fetches secrets from SSM, and starts the containers.
+
+### 3. Wait for EC2 Bootstrap (~3-5 min)
+
+```bash
+ssh ec2-user@$(terraform output -raw ec2_public_ip) "sudo cloud-init status --wait"
+```
+
+### 4. Update FRONTEND_URL
+
+The CloudFront URL isn't known until after `terraform apply`, so update it on the instance:
+
+```bash
+CF_URL=$(terraform output -raw cloudfront_url)
+ssh ec2-user@$(terraform output -raw ec2_public_ip) \
+  "sudo sed -i 's|FRONTEND_URL=.*|FRONTEND_URL=https://${CF_URL}|' /opt/plex/repo/deploy/.env && \
+   cd /opt/plex/repo/deploy && sudo docker compose -f docker-compose.prod.yaml restart api"
+```
+
+### 5. Deploy Frontend
+
+```bash
+./deploy/deploy-frontend.sh $(terraform output -raw s3_bucket_name) $(terraform output -raw cloudfront_distribution_id)
+```
+
+### 6. Verify
+
+```bash
+# Health check via EC2 directly
+curl http://$(terraform output -raw ec2_public_ip)/api/health
+
+# Health check via CloudFront
+curl https://$(terraform output -raw cloudfront_url)/api/health
+
+# Open in browser
+open https://$(terraform output -raw cloudfront_url)
+```
+
+### Redeploying
+
+**Backend changes:** SSH into EC2, `cd /opt/plex/repo && git pull && cd deploy && sudo docker compose -f docker-compose.prod.yaml up -d --build`
+
+**Frontend changes:** Run `./deploy/deploy-frontend.sh <bucket> <distribution-id>` from your local machine.
 
 ## Environment Variables
 
 ### Backend
 
-| Variable | Description |
-|----------|-------------|
-| `OPENAI_API_KEY` | OpenAI API key for AI assistant |
-| `TAVILY_API_KEY` | Tavily API key for web search |
-| `REDIS_URL` | Redis connection URL (default: `redis://localhost:6379`) |
-| `SESSION_SECRET_KEY` | Secret key for JWT signing |
+| Variable                 | Description                                              |
+| ------------------------ | -------------------------------------------------------- |
+| `OPENAI_API_KEY`         | OpenAI API key for AI assistant                          |
+| `TAVILY_API_KEY`         | Tavily API key for web search                            |
+| `REDIS_URL`              | Redis connection URL (default: `redis://localhost:6379`) |
+| `SESSION_SECRET_KEY`     | Secret key for JWT signing                               |
+| `PLEX_CLIENT_IDENTIFIER` | Plex client identifier                                   |
+| `FRONTEND_URL`           | Frontend URL for CORS (default: `http://localhost:5173`) |
 
 ## License
 

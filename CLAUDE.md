@@ -20,12 +20,26 @@ plex/
 │       ├── hooks/               # Custom hooks (useAgent, useCachedThumbnail)
 │       ├── pages/               # Page components
 │       └── services/            # Browser services (thumbnailCache with IndexedDB)
-└── backend/
-    └── app/
-        ├── agents/              # LangChain tools (plex.py)
-        ├── models/              # Pydantic models
-        ├── routers/             # FastAPI route handlers
-        └── services/            # Business logic (agent_service, plex_client, cache)
+├── backend/
+│   └── app/
+│       ├── agents/              # LangChain tools (plex.py)
+│       ├── models/              # Pydantic models
+│       ├── routers/             # FastAPI route handlers
+│       └── services/            # Business logic (agent_service, plex_client, cache)
+├── deploy/                      # Production deployment config
+│   ├── docker-compose.prod.yaml # nginx + FastAPI + Redis
+│   ├── nginx/nginx.conf         # Reverse proxy with SSE support
+│   └── deploy-frontend.sh       # Build & sync frontend to S3
+└── infra/                       # Terraform AWS infrastructure
+    ├── main.tf                  # Provider, default VPC, AL2023 ARM AMI
+    ├── variables.tf             # Region, instance type, secrets
+    ├── s3.tf                    # S3 bucket + CloudFront OAC
+    ├── cloudfront.tf            # Distribution (S3 + EC2 origins)
+    ├── ec2.tf                   # t4g.small, security group, EIP
+    ├── iam.tf                   # EC2 role for SSM access
+    ├── ssm.tf                   # SecureString params for secrets
+    ├── outputs.tf               # CloudFront URL, EC2 IP, bucket name
+    └── user-data.sh             # EC2 bootstrap script
 ```
 
 ## Commands
@@ -68,12 +82,44 @@ uv pip install -e ".[dev]"       # Install all dependencies
 uv pip install <package>         # Add new package
 ```
 
+### Deployment (from project root)
+
+```bash
+# Infrastructure (one-time setup + changes)
+cd infra && terraform init && terraform apply
+
+# Frontend deploy (build + sync to S3 + invalidate CloudFront)
+./deploy/deploy-frontend.sh <s3-bucket> <cloudfront-distribution-id>
+
+# Backend redeploy (SSH into EC2)
+ssh ec2-user@<IP> "cd /opt/plex/repo && sudo git pull && cd deploy && sudo docker compose -f docker-compose.prod.yaml up -d --build"
+```
+
 ## Architecture
 
-- **Frontend**: React 19 with TypeScript, built with Vite. Runs on port 5173.
+- **Frontend**: React 19 with TypeScript, built with Vite. Runs on port 5173 locally.
 - **Backend**: FastAPI with Pydantic v2 for validation. Runs on port 8000.
-- **Vite Proxy**: Frontend proxies `/api/*` requests to backend (configured in `vite.config.ts`), avoiding CORS issues.
+- **Vite Proxy**: Frontend proxies `/api/*` requests to backend (configured in `vite.config.ts`), avoiding CORS issues in dev.
 - **API prefix**: Backend endpoints use `/api/` prefix for API routes.
+
+### Production Architecture (AWS)
+
+```
+Browser -> CloudFront (HTTPS)
+             |-- /* -> S3 (frontend static files)
+             |-- /api/* -> EC2 (Elastic IP, port 80)
+                             |-- nginx (reverse proxy)
+                             |-- FastAPI (port 8000, internal)
+                             |-- Redis (port 6379, internal)
+```
+
+- **CloudFront** unifies both origins under one URL, eliminating CORS issues. Handles SSL termination.
+- **S3 + OAC**: Frontend static files served privately through CloudFront Origin Access Control.
+- **EC2 (t4g.small ARM)**: Runs Docker Compose with nginx, FastAPI, and Redis.
+- **nginx**: Lightweight reverse proxy. Disables buffering for SSE streaming support on `/api/` routes.
+- **SSM Parameter Store**: Stores secrets (API keys, session key). EC2 fetches them at boot via IAM role.
+- **Terraform** (`infra/`): Manages all infrastructure. State stored locally (no remote backend).
+- **No custom domain**: Uses CloudFront's default `*.cloudfront.net` domain.
 
 ## Key Features
 
@@ -124,3 +170,26 @@ Backend requires:
 - `TAVILY_API_KEY` - For web search tool
 - `REDIS_URL` - For caching (defaults to `redis://localhost:6379`)
 - `SESSION_SECRET_KEY` - For JWT signing
+- `PLEX_CLIENT_IDENTIFIER` - Plex client identifier
+- `FRONTEND_URL` - Frontend URL for CORS (defaults to `http://localhost:5173`, set to CloudFront URL in production)
+
+### CORS Configuration
+
+CORS allowed origins are set in `backend/app/main.py` from `settings.frontend_url` plus `http://localhost:5173`. In production, `FRONTEND_URL` should be the CloudFront URL (e.g., `https://d1234.cloudfront.net`). Since CloudFront unifies both origins under one domain, CORS headers are only needed if the browser makes cross-origin requests (e.g., during local dev).
+
+### Production Docker Compose
+
+The `deploy/docker-compose.prod.yaml` runs 3 services:
+- **nginx** (port 80): Reverse proxy to FastAPI, with SSE buffering disabled
+- **api**: Builds from `backend/Dockerfile`, reads `.env` for secrets
+- **redis**: Persistent volume, healthcheck with `redis-cli ping`
+
+The `.env` file in `deploy/` is generated by EC2 user-data at boot from SSM parameters. It is not checked into git.
+
+### Terraform Infrastructure
+
+All infra is in `infra/`. Key files:
+- `terraform.tfvars` (gitignored) contains secrets — copy from `terraform.tfvars.example`
+- `user-data.sh` is a templatefile that bootstraps EC2 (installs Docker, clones repo, starts containers)
+- CloudFront `/api/*` behavior forwards all headers/cookies with no caching (required for auth + SSE)
+- CloudFront SPA routing: custom error responses map 403/404 to `/index.html` with 200

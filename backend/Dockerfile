@@ -66,10 +66,6 @@ ENTRYPOINT []
 # Switch to the non-privileged user to run the application.
 # USER appuser
 
-
-# Copy the source code into the container.
-COPY . .
-
 # Expose the port that the application listens on.
 EXPOSE 8000
 
