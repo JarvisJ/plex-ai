@@ -2,9 +2,6 @@
   position: fixed;
   bottom: 24px;
   right: 24px;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
   background-color: var(--color-accent);
   border: none;
   color: #000;
@@ -12,9 +9,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  transition: transform var(--transition-fast), background-color var(--transition-fast);
+  box-shadow: 3px 4px 11px 1px rgba(255, 255, 0, 0.5);
+  transition: transform var(--transition-fast),
+    background-color var(--transition-fast);
   z-index: 999;
+  height: 100px;
+  width: 200px;
+  border-radius: 20px;
+  right: 20px;
 }
 
 .toggle:hover {

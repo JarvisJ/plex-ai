@@ -59,7 +59,7 @@ export function DashboardPage() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.headerTitle}>Plex Media Dashboard</h1>
+        <h1 className={styles.headerTitle}>Plexy's Media Dashboard</h1>
         <div className={styles.headerActions}>
           {user && <span className={styles.username}>{user.username}</span>}
           <button

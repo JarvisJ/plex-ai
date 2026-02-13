@@ -1,4 +1,4 @@
-import styles from './AgentToggle.module.css';
+import styles from "./AgentToggle.module.css";
 
 interface AgentToggleProps {
   onClick: () => void;
@@ -6,8 +6,32 @@ interface AgentToggleProps {
 
 export function AgentToggle({ onClick }: AgentToggleProps) {
   return (
-    <button className={styles.toggle} onClick={onClick} title="Open Plex Assistant">
-      <svg
+    <button
+      className={styles.toggle}
+      onClick={onClick}
+      title="Open Plex Assistant"
+    >
+      <span
+        style={{
+          position: "absolute",
+          left: "10px",
+          color: "#ffffff",
+        }}
+      >
+        Ask Plexy
+      </span>
+      <img
+        src="/plexy.png"
+        alt="Open AI Assistant"
+        style={{
+          height: "80px",
+          width: "80px",
+          borderRadius: "20px",
+          position: "absolute",
+          right: "30px",
+        }}
+      />
+      {/* <svg
         width="24"
         height="24"
         viewBox="0 0 24 24"
@@ -22,7 +46,7 @@ export function AgentToggle({ onClick }: AgentToggleProps) {
           d="M7 9H17V11H7V9ZM7 6H17V8H7V6ZM7 12H14V14H7V12Z"
           fill="currentColor"
         />
-      </svg>
+      </svg> */}
     </button>
   );
 }

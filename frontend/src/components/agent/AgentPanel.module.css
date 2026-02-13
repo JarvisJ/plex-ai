@@ -34,6 +34,9 @@
   font-size: var(--font-lg);
   font-weight: 600;
   color: var(--color-text-primary);
+  align-items: center;
+  display: flex;
+  gap: 10px;
 }
 
 .headerActions {
@@ -203,7 +206,8 @@
 }
 
 @keyframes blink {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {

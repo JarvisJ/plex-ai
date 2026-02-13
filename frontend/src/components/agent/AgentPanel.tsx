@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
-import Markdown from 'react-markdown';
-import { useAgent, type Message } from '../../hooks/useAgent';
-import { MediaCard } from '../media/MediaCard';
-import styles from './AgentPanel.module.css';
+import { useState, useRef, useEffect } from "react";
+import Markdown from "react-markdown";
+import { useAgent, type Message } from "../../hooks/useAgent";
+import { MediaCard } from "../media/MediaCard";
+import styles from "./AgentPanel.module.css";
 
 interface AgentPanelProps {
   isOpen: boolean;
@@ -12,17 +12,23 @@ interface AgentPanelProps {
 }
 
 const TOOL_NAMES: Record<string, string> = {
-  search_library: 'Searching library',
-  get_recommendations: 'Finding recommendations',
-  get_unwatched: 'Finding unwatched items',
-  get_recently_added: 'Checking recent additions',
-  get_media_details: 'Getting details',
-  get_library_stats: 'Getting library stats',
+  search_library: "Searching library",
+  get_recommendations: "Finding recommendations",
+  get_unwatched: "Finding unwatched items",
+  get_recently_added: "Checking recent additions",
+  get_media_details: "Getting details",
+  get_library_stats: "Getting library stats",
 };
 
-export function AgentPanel({ isOpen, onClose, serverName, clientIdentifier }: AgentPanelProps) {
-  const { messages, isLoading, error, currentTool, sendMessage, reset } = useAgent(serverName);
-  const [input, setInput] = useState('');
+export function AgentPanel({
+  isOpen,
+  onClose,
+  serverName,
+  clientIdentifier,
+}: AgentPanelProps) {
+  const { messages, isLoading, error, currentTool, sendMessage, reset } =
+    useAgent(serverName);
+  const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -33,7 +39,7 @@ export function AgentPanel({ isOpen, onClose, serverName, clientIdentifier }: Ag
   }, [isOpen]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -41,13 +47,13 @@ export function AgentPanel({ isOpen, onClose, serverName, clientIdentifier }: Ag
     if (!input.trim() || isLoading) return;
 
     const message = input.trim();
-    setInput('');
+    setInput("");
     await sendMessage(message);
   };
 
   const handleNewChat = () => {
     reset();
-    setInput('');
+    setInput("");
   };
 
   if (!isOpen) return null;
@@ -56,7 +62,16 @@ export function AgentPanel({ isOpen, onClose, serverName, clientIdentifier }: Ag
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.panel} onClick={(e) => e.stopPropagation()}>
         <header className={styles.header}>
-          <h2 className={styles.title}>Plex Assistant</h2>
+          <h2 className={styles.title}>
+            Plexy the Plexbot
+            <img
+              src="/frowning-plexy.png"
+              style={{
+                height: "60px",
+                width: "60px",
+              }}
+            />
+          </h2>
           <div className={styles.headerActions}>
             <button onClick={handleNewChat} className={styles.newChatButton}>
               New Chat
@@ -154,11 +169,19 @@ interface MessageBubbleProps {
   clientIdentifier: string | null;
 }
 
-function MessageBubble({ message, serverName, clientIdentifier }: MessageBubbleProps) {
-  const isUser = message.role === 'user';
+function MessageBubble({
+  message,
+  serverName,
+  clientIdentifier,
+}: MessageBubbleProps) {
+  const isUser = message.role === "user";
 
   return (
-    <div className={`${styles.messageBubble} ${isUser ? styles.userMessage : styles.assistantMessage}`}>
+    <div
+      className={`${styles.messageBubble} ${
+        isUser ? styles.userMessage : styles.assistantMessage
+      }`}
+    >
       <div className={styles.messageContent}>
         {isUser ? (
           message.content
