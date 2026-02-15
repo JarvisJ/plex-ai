@@ -41,8 +41,7 @@ variable "plex_client_identifier" {
 
 variable "github_repo" {
   description = "GitHub repository URL to clone"
-  type        = string
-  default     = "https://github.com/james/plex.git"
+  type        = string 
 }
 
 variable "github_branch" {
