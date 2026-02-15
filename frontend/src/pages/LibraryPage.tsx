@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useLibraryItems } from "../hooks/useMediaItems";
 import { MediaGrid } from "../components/media/MediaGrid";
 import { LibraryFilters } from "../components/library";
-import { AgentPanel, AgentToggle } from "../components/agent";
 import styles from "./MediaPage.module.css";
 
 interface LibraryPageProps {
@@ -17,7 +16,6 @@ export function LibraryPage({ title }: LibraryPageProps) {
   const [searchParams] = useSearchParams();
   const serverName = searchParams.get("server");
   const clientIdentifier = searchParams.get("machine");
-  const [isAgentOpen, setIsAgentOpen] = useState(false);
 
   // Filter state
   const [searchQuery, setSearchQuery] = useState("");
@@ -90,9 +88,6 @@ export function LibraryPage({ title }: LibraryPageProps) {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <Link to="/dashboard" className={styles.backLink}>
-          &larr;
-        </Link>
         <h1 className={styles.title}>
           {title}
           {total > 0 && (
@@ -127,14 +122,6 @@ export function LibraryPage({ title }: LibraryPageProps) {
           isFetchingMore={isFetchingNextPage}
         />
       </main>
-
-      <AgentToggle onClick={() => setIsAgentOpen(true)} />
-      <AgentPanel
-        isOpen={isAgentOpen}
-        onClose={() => setIsAgentOpen(false)}
-        serverName={serverName}
-        clientIdentifier={clientIdentifier}
-      />
     </div>
   );
 }

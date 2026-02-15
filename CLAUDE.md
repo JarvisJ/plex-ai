@@ -51,6 +51,8 @@ npm run dev          # Start dev server (http://localhost:5173)
 npm run build        # Production build
 npm run lint         # Run ESLint
 npm run preview      # Preview production build
+npx vitest run       # Run all tests
+npx vitest run src/components/__tests__/AppLayout.test.tsx  # Run specific test file
 ```
 
 ### Backend (from `backend/`)
@@ -94,6 +96,42 @@ cd infra && terraform init && terraform apply
 # Backend redeploy (SSH into EC2)
 ssh ec2-user@<IP> "cd /opt/plex/repo && sudo git pull && cd deploy && sudo docker compose -f docker-compose.prod.yaml up -d --build"
 ```
+
+## Testing Requirements
+
+**Every code change must include corresponding test updates.** This is a hard rule, not a suggestion.
+
+### When to write tests
+
+- **New component or page**: Create a test file in the nearest `__tests__/` directory (e.g., `components/__tests__/MyComponent.test.tsx`)
+- **New hook**: Create a test file in `hooks/__tests__/`
+- **New API function**: Create a test file in `api/__tests__/`
+- **Modified component/hook/API logic**: Update existing tests to cover the change, and add new test cases for new behavior
+- **Bug fix**: Add a regression test that would have caught the bug
+
+### Test conventions
+
+- **Framework**: Vitest + React Testing Library (frontend), pytest (backend)
+- **File location**: Tests live in `__tests__/` directories adjacent to source files
+- **Mocking pattern**: Use `vi.mock()` with hoisted mocks. Declare mutable mock state (`let mockX = ...`) above `vi.mock()` calls so the factory closures read current values on each render
+- **Router wrapping**: Components using React Router must be wrapped in `<MemoryRouter>` with appropriate routes
+- **Naming**: Test files match source: `MyComponent.tsx` → `MyComponent.test.tsx`
+
+### Running tests
+
+```bash
+# Frontend (from frontend/)
+npx vitest run                    # All tests
+npx vitest run path/to/test.tsx   # Specific file
+
+# Backend (from backend/)
+pytest                            # All tests
+pytest tests/test_file.py -v      # Specific file
+```
+
+### Verification
+
+After any code change, always run the full test suite (`npx vitest run` or `pytest`) and confirm all tests pass before considering the task complete. Do not leave failing tests.
 
 ## Architecture
 

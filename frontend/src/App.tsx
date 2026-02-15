@@ -4,6 +4,8 @@ import { WatchlistProvider } from './contexts/WatchlistContext';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { MoviesPage, ShowsPage } from './pages/LibraryPage';
+import { AgentPage } from './pages/AgentPage';
+import { AppLayout } from './components/layout/AppLayout';
 import './App.css';
 
 const queryClient = new QueryClient({
@@ -24,9 +26,12 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<LoginPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/movies/:libraryKey" element={<MoviesPage />} />
-            <Route path="/shows/:libraryKey" element={<ShowsPage />} />
+            <Route element={<AppLayout />}>
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/movies/:libraryKey" element={<MoviesPage />} />
+              <Route path="/shows/:libraryKey" element={<ShowsPage />} />
+              <Route path="/agent" element={<AgentPage />} />
+            </Route>
           </Routes>
         </BrowserRouter>
       </WatchlistProvider>

@@ -9,20 +9,14 @@ import {
 } from "../hooks/useMediaItems";
 import { clearCache } from "../api/media";
 import type { Library } from "../api/media";
-import { AgentPanel, AgentToggle } from "../components/agent";
 import styles from "./DashboardPage.module.css";
 
 export function DashboardPage() {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const {
-    data: servers,
-    isLoading: serversLoading,
-    error: serversError,
-  } = useServers();
+  const { data: servers } = useServers();
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isAgentOpen, setIsAgentOpen] = useState(false);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -37,13 +31,8 @@ export function DashboardPage() {
   };
 
   const firstServer = servers?.[0] ?? null;
-  const [selectedServerId, setSelectedServerId] = useState<string | null>(null);
-  const selectedServer = selectedServerId
-    ? servers?.find((s) => s.client_identifier === selectedServerId) ??
-      firstServer
-    : firstServer;
-
-  const serverName = selectedServer ? getServerName(selectedServer) : null;
+  const serverName = firstServer ? getServerName(firstServer) : null;
+  const clientIdentifier = firstServer?.client_identifier ?? null;
   const { data: libraries, isLoading: librariesLoading } =
     useLibraries(serverName);
 
@@ -58,52 +47,17 @@ export function DashboardPage() {
 
   return (
     <div className={styles.container}>
-      <header className={styles.header}>
-        <h1 className={styles.headerTitle}>Plexy's Media Dashboard</h1>
-        <div className={styles.headerActions}>
-          {user && <span className={styles.username}>{user.username}</span>}
+      <main className={styles.main}>
+        <div className={styles.mainHeader}>
+          <h2 className={styles.welcomeTitle}>Libraries</h2>
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
             className={styles.headerButton}
           >
-            {isRefreshing ? "Refreshing..." : "Refresh Content Cache"}
-          </button>
-          <button onClick={logout} className={styles.headerButton}>
-            Logout
+            {isRefreshing ? "Refreshing..." : "Refresh Cache"}
           </button>
         </div>
-      </header>
-
-      <main className={styles.main}>
-        {serversLoading && (
-          <p className={styles.loadingText}>Loading servers...</p>
-        )}
-        {serversError && (
-          <p className={styles.errorText}>
-            Failed to load servers. Please try again.
-          </p>
-        )}
-
-        {servers && servers.length > 1 && (
-          <div className={styles.serverSelector}>
-            <label className={styles.serverLabel}>Select Server</label>
-            <select
-              value={selectedServer?.client_identifier || ""}
-              onChange={(e) => setSelectedServerId(e.target.value)}
-              className={styles.serverSelect}
-            >
-              {servers.map((server) => (
-                <option
-                  key={server.client_identifier}
-                  value={server.client_identifier}
-                >
-                  {server.name} {server.local ? "(Local)" : ""}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
 
         {librariesLoading && (
           <p className={styles.loadingText}>Loading libraries...</p>
@@ -120,7 +74,7 @@ export function DashboardPage() {
                       key={library.key}
                       library={library}
                       serverName={serverName!}
-                      clientIdentifier={selectedServer!.client_identifier}
+                      clientIdentifier={clientIdentifier!}
                     />
                   ))}
                 </div>
@@ -136,7 +90,7 @@ export function DashboardPage() {
                       key={library.key}
                       library={library}
                       serverName={serverName!}
-                      clientIdentifier={selectedServer!.client_identifier}
+                      clientIdentifier={clientIdentifier!}
                     />
                   ))}
                 </div>
@@ -151,14 +105,6 @@ export function DashboardPage() {
           </div>
         )}
       </main>
-
-      <AgentToggle onClick={() => setIsAgentOpen(true)} />
-      <AgentPanel
-        isOpen={isAgentOpen}
-        onClose={() => setIsAgentOpen(false)}
-        serverName={serverName}
-        clientIdentifier={selectedServer?.client_identifier ?? null}
-      />
     </div>
   );
 }
