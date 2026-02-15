@@ -20,14 +20,16 @@ resource "aws_cloudfront_distribution" "main" {
 
   # EC2 origin (backend API)
   origin {
-    domain_name = aws_eip.main.public_ip
+    domain_name = aws_instance.main.public_dns
     origin_id   = "ec2-api"
 
     custom_origin_config {
-      http_port              = 80
-      https_port             = 443
-      origin_protocol_policy = "http-only"
-      origin_ssl_protocols   = ["TLSv1.2"]
+      http_port                = 80
+      https_port               = 443
+      origin_protocol_policy   = "http-only"
+      origin_ssl_protocols     = ["TLSv1.2"]
+      origin_read_timeout      = 60
+      origin_keepalive_timeout = 60
     }
   }
 
@@ -61,7 +63,7 @@ resource "aws_cloudfront_distribution" "main" {
 
     forwarded_values {
       query_string = true
-      headers      = ["Authorization", "Content-Type", "Accept", "Origin"]
+      headers      = ["Authorization", "Content-Type", "Accept", "Origin", "Host"]
       cookies {
         forward = "all"
       }
