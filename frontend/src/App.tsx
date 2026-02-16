@@ -31,6 +31,7 @@ function App() {
               <Route path="/movies/:libraryKey" element={<MoviesPage />} />
               <Route path="/shows/:libraryKey" element={<ShowsPage />} />
               <Route path="/agent" element={<AgentPage />} />
+              <Route path="/agent/:conversationId" element={<AgentPage />} />
             </Route>
           </Routes>
         </BrowserRouter>

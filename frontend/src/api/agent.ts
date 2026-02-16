@@ -132,3 +132,26 @@ export async function clearConversation(conversationId: string): Promise<void> {
     }
   );
 }
+
+export interface ConversationSummary {
+  conversation_id: string;
+  title: string;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface ConversationHistory {
+  conversation_id: string;
+  title: string;
+  messages: Array<{ role: string; content: string; media_items: MediaItem[] }>;
+}
+
+export async function listConversations(): Promise<ConversationSummary[]> {
+  return apiFetch<ConversationSummary[]>("/api/agent/conversations");
+}
+
+export async function getConversation(
+  id: string
+): Promise<ConversationHistory> {
+  return apiFetch<ConversationHistory>(`/api/agent/conversation/${id}`);
+}

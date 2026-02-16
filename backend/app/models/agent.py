@@ -24,3 +24,20 @@ class ChatResponse(BaseModel):
 
     conversation_id: str
     message: AgentMessage
+
+
+class ConversationSummary(BaseModel):
+    """Summary of a conversation for listing."""
+
+    conversation_id: str
+    title: str
+    created_at: float
+    updated_at: float
+
+
+class ConversationHistory(BaseModel):
+    """Full conversation history with displayable messages."""
+
+    conversation_id: str
+    title: str
+    messages: list[AgentMessage]

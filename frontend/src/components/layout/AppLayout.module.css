@@ -121,6 +121,36 @@
   border-radius: var(--radius-sm);
 }
 
+.conversationList {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.conversationLink {
+  display: block;
+  padding: var(--spacing-xs) var(--spacing-lg) var(--spacing-xs) calc(var(--spacing-lg) + 16px);
+  color: var(--color-text-dimmed);
+  text-decoration: none;
+  font-size: var(--font-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+  border-left: 3px solid transparent;
+}
+
+.conversationLink:hover {
+  background-color: #1e1e22;
+  color: var(--color-text-secondary);
+}
+
+.conversationLinkActive {
+  background-color: rgba(202, 140, 9, 0.08);
+  color: var(--color-accent);
+  border-left-color: var(--color-accent);
+}
+
 .sidebarFooter {
   padding: var(--spacing-lg);
   border-top: 1px solid #2a2a2e;
@@ -180,4 +210,78 @@
 .loadingText {
   padding: var(--spacing-lg);
   color: var(--color-text-muted);
+}
+
+.mobileHeader {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background-color: #151518;
+  border-bottom: 1px solid #2a2a2e;
+  z-index: 100;
+}
+
+.hamburgerButton {
+  background: transparent;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobileHeaderTitle {
+  margin: 0;
+  font-size: var(--font-lg);
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+.overlayVisible {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .layout {
+    flex-direction: column;
+  }
+
+  .mobileHeader {
+    display: flex;
+  }
+
+  .sidebar {
+    position: fixed;
+    left: -260px;
+    top: 0;
+    height: 100vh;
+    z-index: 1000;
+    transition: left 0.3s ease;
+  }
+
+  .sidebarOpen {
+    left: 0;
+  }
+
+  .sidebarHeader {
+    display: none;
+  }
+
+  .main {
+    width: 100%;
+  }
 }

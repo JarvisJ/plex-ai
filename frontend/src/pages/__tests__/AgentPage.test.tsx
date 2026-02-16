@@ -1,9 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const mockSendMessage = vi.fn();
 const mockReset = vi.fn();
+const mockLoadConversation = vi.fn();
+const mockNavigate = vi.fn();
 
 interface MockMessage {
   id: string;
@@ -17,6 +20,7 @@ let mockMessages: MockMessage[] = [];
 let mockIsLoading = false;
 let mockError: string | null = null;
 let mockCurrentTool: string | null = null;
+let mockConversationId: string | null = null;
 
 vi.mock('../../hooks/useAgent', () => ({
   useAgent: () => ({
@@ -24,7 +28,9 @@ vi.mock('../../hooks/useAgent', () => ({
     isLoading: mockIsLoading,
     error: mockError,
     currentTool: mockCurrentTool,
+    conversationId: mockConversationId,
     sendMessage: mockSendMessage,
+    loadConversation: mockLoadConversation,
     reset: mockReset,
   }),
 }));
@@ -39,23 +45,42 @@ vi.mock('react-markdown', () => ({
   default: ({ children }: { children: string }) => <div>{children}</div>,
 }));
 
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
+
 import { AgentPage } from '../AgentPage';
 
 function renderAgentPage(route = '/agent?server=MyServer&machine=abc123') {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return render(
-    <MemoryRouter initialEntries={[route]}>
-      <AgentPage />
-    </MemoryRouter>
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[route]}>
+        <Routes>
+          <Route path="/agent" element={<AgentPage />} />
+          <Route path="/agent/:conversationId" element={<AgentPage />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>
   );
 }
 
 beforeEach(() => {
   mockSendMessage.mockReset();
   mockReset.mockReset();
+  mockLoadConversation.mockReset();
+  mockNavigate.mockReset();
   mockMessages = [];
   mockIsLoading = false;
   mockError = null;
   mockCurrentTool = null;
+  mockConversationId = null;
 });
 
 describe('AgentPage', () => {
@@ -78,7 +103,7 @@ describe('AgentPage', () => {
     expect(screen.getByText('"Recommend something like The Matrix"')).toBeInTheDocument();
   });
 
-  it('new chat button calls reset and clears input', () => {
+  it('new chat button calls reset, clears input, and navigates', () => {
     renderAgentPage();
 
     const input = screen.getByPlaceholderText('Ask about your library...') as HTMLInputElement;
@@ -87,6 +112,7 @@ describe('AgentPage', () => {
 
     expect(mockReset).toHaveBeenCalled();
     expect(input.value).toBe('');
+    expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('/agent?'));
   });
 
   it('submits trimmed message and clears input', () => {
@@ -203,7 +229,6 @@ describe('AgentPage', () => {
       { id: 'a1', role: 'assistant', content: 'Thinking', mediaItems: [], isStreaming: true },
     ];
     renderAgentPage();
-    // The cursor is a span with "|" text inside the message bubble
     const cursor = document.querySelector('[class*="cursor"]');
     expect(cursor).toBeInTheDocument();
     expect(cursor?.textContent).toBe('|');
@@ -216,5 +241,15 @@ describe('AgentPage', () => {
     renderAgentPage();
     const cursor = document.querySelector('[class*="cursor"]');
     expect(cursor).not.toBeInTheDocument();
+  });
+
+  it('loads conversation when URL has conversationId param', () => {
+    renderAgentPage('/agent/conv-123?server=MyServer&machine=abc123');
+    expect(mockLoadConversation).toHaveBeenCalledWith('conv-123');
+  });
+
+  it('does not load conversation when no URL param', () => {
+    renderAgentPage('/agent?server=MyServer&machine=abc123');
+    expect(mockLoadConversation).not.toHaveBeenCalled();
   });
 });

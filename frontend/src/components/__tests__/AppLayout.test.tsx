@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const mockNavigate = vi.fn();
 const mockLogout = vi.fn();
@@ -25,6 +26,12 @@ vi.mock('../../hooks/useMediaItems', () => ({
   getServerName: (server: { name: string }) => server.name,
 }));
 
+let mockConversations: Array<{ conversation_id: string; title: string; created_at: number; updated_at: number }> = [];
+
+vi.mock('../../api/agent', () => ({
+  listConversations: () => Promise.resolve(mockConversations),
+}));
+
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
   return {
@@ -36,17 +43,23 @@ vi.mock('react-router-dom', async () => {
 import { AppLayout } from '../layout/AppLayout';
 
 function renderWithRouter(initialRoute = '/dashboard') {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return render(
-    <MemoryRouter initialEntries={[initialRoute]}>
-      <Routes>
-        <Route element={<AppLayout />}>
-          <Route path="/dashboard" element={<div>Dashboard Content</div>} />
-          <Route path="/movies/:libraryKey" element={<div>Movies Content</div>} />
-          <Route path="/shows/:libraryKey" element={<div>Shows Content</div>} />
-          <Route path="/agent" element={<div>Agent Content</div>} />
-        </Route>
-      </Routes>
-    </MemoryRouter>
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[initialRoute]}>
+        <Routes>
+          <Route element={<AppLayout />}>
+            <Route path="/dashboard" element={<div>Dashboard Content</div>} />
+            <Route path="/movies/:libraryKey" element={<div>Movies Content</div>} />
+            <Route path="/shows/:libraryKey" element={<div>Shows Content</div>} />
+            <Route path="/agent" element={<div>Agent Content</div>} />
+            <Route path="/agent/:conversationId" element={<div>Agent Conversation Content</div>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>
   );
 }
 
@@ -67,12 +80,14 @@ beforeEach(() => {
     { key: '3', title: 'Anime', type: 'show', count: 35 },
   ];
   mockLibrariesLoading = false;
+  mockConversations = [];
 });
 
 describe('AppLayout', () => {
   it('renders sidebar with logo and title', () => {
     renderWithRouter();
-    expect(screen.getByText('Plexy Media Dashboard')).toBeInTheDocument();
+    const titles = screen.getAllByText('Plexy Media Dashboard');
+    expect(titles.length).toBe(2); // mobile header + sidebar
     const logos = screen.getAllByAltText('Plexy');
     expect(logos.length).toBeGreaterThanOrEqual(1);
   });
@@ -115,7 +130,7 @@ describe('AppLayout', () => {
 
   it('renders Plexy agent nav link', () => {
     renderWithRouter();
-    expect(screen.getByText('Plexy')).toBeInTheDocument();
+    expect(screen.getByText('Plexy Assistant')).toBeInTheDocument();
   });
 
   it('renders username in sidebar footer', () => {
@@ -204,5 +219,61 @@ describe('AppLayout', () => {
     };
     renderWithRouter();
     expect(screen.queryByText('testuser')).not.toBeInTheDocument();
+  });
+
+  it('renders conversation list when conversations exist', async () => {
+    mockConversations = [
+      { conversation_id: 'conv-1', title: 'What movies do I have?', created_at: 1000, updated_at: 2000 },
+      { conversation_id: 'conv-2', title: 'Recommend something', created_at: 1500, updated_at: 2500 },
+    ];
+    renderWithRouter();
+
+    // Conversations load async via useQuery
+    expect(await screen.findByText('What movies do I have?')).toBeInTheDocument();
+    expect(screen.getByText('Recommend something')).toBeInTheDocument();
+  });
+
+  it('renders hamburger menu button', () => {
+    renderWithRouter();
+    expect(screen.getByLabelText('Toggle menu')).toBeInTheDocument();
+  });
+
+  it('toggles sidebarOpen class when hamburger is clicked', () => {
+    renderWithRouter();
+    const hamburger = screen.getByLabelText('Toggle menu');
+    const nav = document.querySelector('nav')!;
+
+    expect(nav.className).not.toContain('sidebarOpen');
+
+    fireEvent.click(hamburger);
+    expect(nav.className).toContain('sidebarOpen');
+
+    fireEvent.click(hamburger);
+    expect(nav.className).not.toContain('sidebarOpen');
+  });
+
+  it('closes menu when overlay is clicked', () => {
+    renderWithRouter();
+    const hamburger = screen.getByLabelText('Toggle menu');
+    const overlay = screen.getByTestId('menu-overlay');
+
+    fireEvent.click(hamburger);
+    const nav = document.querySelector('nav')!;
+    expect(nav.className).toContain('sidebarOpen');
+
+    fireEvent.click(overlay);
+    expect(nav.className).not.toContain('sidebarOpen');
+  });
+
+  it('conversation links include correct href', async () => {
+    mockConversations = [
+      { conversation_id: 'conv-1', title: 'Test chat', created_at: 1000, updated_at: 2000 },
+    ];
+    renderWithRouter();
+
+    const link = await screen.findByText('Test chat');
+    const anchor = link.closest('a');
+    expect(anchor?.getAttribute('href')).toContain('/agent/conv-1');
+    expect(anchor?.getAttribute('href')).toContain('server=MyServer');
   });
 });

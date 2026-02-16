@@ -14,6 +14,7 @@ from app.config import Settings
 from app.models.agent import AgentMessage, ChatResponse
 from app.models.media import MediaItem
 from app.services.cache import CacheService
+from app.services.conversation_store import ConversationStore
 from app.services.plex_client import PlexClientService
 
 # Load environment variables from .env file
@@ -59,11 +60,15 @@ class PlexAgentService:
         settings: Settings,
         server_name: str,
         cache: CacheService,
+        user_id: int | None = None,
+        conversation_store: ConversationStore | None = None,
     ):
         self.plex_token = plex_token
         self.settings = settings
         self.server_name = server_name
         self.cache = cache
+        self.user_id = user_id
+        self.conversation_store = conversation_store
         self._plex_client: PlexClientService | None = None
         self._llm: ChatOpenAI | None = None
 
@@ -96,9 +101,18 @@ class PlexAgentService:
 
         # Get or initialize conversation history
         if conversation_id not in self._conversations:
-            self._conversations[conversation_id] = [
-                SystemMessage(content=SYSTEM_PROMPT)
-            ]
+            # Try loading from Redis
+            loaded = None
+            if self.conversation_store and self.user_id is not None:
+                loaded = self.conversation_store.load_messages(
+                    self.user_id, conversation_id
+                )
+            if loaded:
+                self._conversations[conversation_id] = loaded
+            else:
+                self._conversations[conversation_id] = [
+                    SystemMessage(content=SYSTEM_PROMPT)
+                ]
 
         history = self._conversations[conversation_id]
 
@@ -177,6 +191,12 @@ class PlexAgentService:
         # Store updated history
         self._conversations[conversation_id] = history
 
+        # Persist to Redis
+        if self.conversation_store and self.user_id is not None:
+            self.conversation_store.save_conversation(
+                self.user_id, conversation_id, history
+            )
+
         # Filter media items to only include those mentioned in the response
         mentioned_items: list[MediaItem] = []
         if collected_media_items and final_response:
@@ -219,9 +239,18 @@ class PlexAgentService:
 
         # Get or initialize conversation history
         if conversation_id not in self._conversations:
-            self._conversations[conversation_id] = [
-                SystemMessage(content=SYSTEM_PROMPT)
-            ]
+            # Try loading from Redis
+            loaded = None
+            if self.conversation_store and self.user_id is not None:
+                loaded = self.conversation_store.load_messages(
+                    self.user_id, conversation_id
+                )
+            if loaded:
+                self._conversations[conversation_id] = loaded
+            else:
+                self._conversations[conversation_id] = [
+                    SystemMessage(content=SYSTEM_PROMPT)
+                ]
 
         history = self._conversations[conversation_id]
 
@@ -315,6 +344,12 @@ class PlexAgentService:
         # Store updated history
         self._conversations[conversation_id] = history
 
+        # Persist to Redis
+        if self.conversation_store and self.user_id is not None:
+            self.conversation_store.save_conversation(
+                self.user_id, conversation_id, history
+            )
+
         # Filter media items to only include those mentioned in the response
         if collected_media_items and full_response:
             response_lower = full_response.lower()
@@ -339,8 +374,14 @@ class PlexAgentService:
         yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
     def clear_conversation(self, conversation_id: str) -> bool:
-        """Clear a conversation from memory."""
+        """Clear a conversation from memory and Redis."""
+        cleared = False
         if conversation_id in self._conversations:
             del self._conversations[conversation_id]
-            return True
-        return False
+            cleared = True
+        if self.conversation_store and self.user_id is not None:
+            if self.conversation_store.delete_conversation(
+                self.user_id, conversation_id
+            ):
+                cleared = True
+        return cleared

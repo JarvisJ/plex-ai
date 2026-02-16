@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useParams, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import Markdown from "react-markdown";
 import { useAgent, type Message } from "../hooks/useAgent";
 import { MediaCard } from "../components/media/MediaCard";
@@ -16,18 +17,55 @@ const TOOL_NAMES: Record<string, string> = {
 
 export function AgentPage() {
   const [searchParams] = useSearchParams();
+  const { conversationId: urlConversationId } = useParams<{
+    conversationId: string;
+  }>();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const serverName = searchParams.get("server");
   const clientIdentifier = searchParams.get("machine");
 
-  const { messages, isLoading, error, currentTool, sendMessage, reset } =
-    useAgent(serverName);
+  const {
+    messages,
+    isLoading,
+    error,
+    currentTool,
+    conversationId,
+    sendMessage,
+    loadConversation,
+    reset,
+  } = useAgent(serverName);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const loadedConversationRef = useRef<string | null>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  // Load conversation from URL param
+  useEffect(() => {
+    if (
+      urlConversationId &&
+      urlConversationId !== loadedConversationRef.current
+    ) {
+      loadedConversationRef.current = urlConversationId;
+      loadConversation(urlConversationId);
+    }
+  }, [urlConversationId, loadConversation]);
+
+  // Update URL when conversation ID changes (new chat)
+  useEffect(() => {
+    if (conversationId && !urlConversationId && messages.length > 0) {
+      // Mark as already loaded so the load effect doesn't re-fetch
+      loadedConversationRef.current = conversationId;
+      const params = new URLSearchParams(searchParams);
+      navigate(`/agent/${conversationId}?${params.toString()}`, {
+        replace: true,
+      });
+    }
+  }, [conversationId, urlConversationId, messages.length, searchParams, navigate]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -40,11 +78,16 @@ export function AgentPage() {
     const message = input.trim();
     setInput("");
     await sendMessage(message);
+    // Invalidate conversations list so sidebar refreshes
+    queryClient.invalidateQueries({ queryKey: ["conversations"] });
   };
 
   const handleNewChat = () => {
     reset();
     setInput("");
+    loadedConversationRef.current = null;
+    const params = new URLSearchParams(searchParams);
+    navigate(`/agent?${params.toString()}`);
   };
 
   return (

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { sendMessageStream, clearConversation } from '../agent';
+import { sendMessageStream, clearConversation, listConversations, getConversation } from '../agent';
 import type { StreamCallbacks } from '../agent';
 
 function makeCallbacks(): StreamCallbacks {
@@ -162,5 +162,65 @@ describe('clearConversation', () => {
       '/api/agent/conversation/conv-123',
       expect.objectContaining({ method: 'DELETE' })
     );
+  });
+});
+
+describe('listConversations', () => {
+  beforeEach(() => {
+    vi.mocked(fetch).mockReset();
+    vi.mocked(localStorage.getItem).mockReturnValue('test-token');
+  });
+
+  it('fetches conversations list', async () => {
+    const mockData = [
+      { conversation_id: 'c1', title: 'Chat 1', created_at: 1000, updated_at: 2000 },
+    ];
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => mockData,
+    } as Response);
+
+    const result = await listConversations();
+
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/agent/conversations',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: 'Bearer test-token',
+        }),
+      })
+    );
+    expect(result).toEqual(mockData);
+  });
+});
+
+describe('getConversation', () => {
+  beforeEach(() => {
+    vi.mocked(fetch).mockReset();
+    vi.mocked(localStorage.getItem).mockReturnValue('test-token');
+  });
+
+  it('fetches conversation by id', async () => {
+    const mockData = {
+      conversation_id: 'c1',
+      title: 'Chat 1',
+      messages: [{ role: 'user', content: 'Hi', media_items: [] }],
+    };
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => mockData,
+    } as Response);
+
+    const result = await getConversation('c1');
+
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/agent/conversation/c1',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: 'Bearer test-token',
+        }),
+      })
+    );
+    expect(result).toEqual(mockData);
   });
 });
