@@ -1,5 +1,8 @@
 import { useState, useCallback, useRef } from "react";
-import { sendMessageStream, clearConversation } from "../api/agent";
+import {
+  sendMessageStream,
+  getConversation,
+} from "../api/agent";
 import type { MediaItem } from "../api/media";
 
 export interface Message {
@@ -121,26 +124,38 @@ export function useAgent(serverName: string | null) {
     [serverName, conversationId]
   );
 
-  const reset = useCallback(async () => {
-    if (conversationId) {
-      try {
-        await clearConversation(conversationId);
-      } catch {
-        // Ignore errors when clearing
-      }
+  const loadConversation = useCallback(async (id: string) => {
+    try {
+      const history = await getConversation(id);
+      const loadedMessages: Message[] = history.messages.map((msg, index) => ({
+        id: `${msg.role}-loaded-${index}`,
+        role: msg.role as "user" | "assistant",
+        content: msg.content,
+        mediaItems: msg.media_items || [],
+      }));
+      setMessages(loadedMessages);
+      setConversationId(id);
+      setError(null);
+    } catch {
+      setError("Failed to load conversation");
     }
+  }, []);
+
+  const reset = useCallback(() => {
     setMessages([]);
     setConversationId(null);
     setError(null);
     setCurrentTool(null);
-  }, [conversationId]);
+  }, []);
 
   return {
     messages,
     isLoading,
     error,
     currentTool,
+    conversationId,
     sendMessage: send,
+    loadConversation,
     reset,
   };
 }

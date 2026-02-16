@@ -292,3 +292,17 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+@media (max-width: 768px) {
+  .mediaGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .messages {
+    padding: var(--spacing-xl) var(--spacing-md);
+  }
+
+  .messageBubble {
+    max-width: 95%;
+  }
+}

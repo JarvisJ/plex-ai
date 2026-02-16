@@ -96,5 +96,17 @@ def get_plex_token(token_payload: dict = Depends(get_current_user_token)) -> str
     return plex_token
 
 
+def get_user_id(token_payload: dict = Depends(get_current_user_token)) -> int:
+    """Extract user ID from JWT payload."""
+    user_id = token_payload.get("user_id")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token: missing user ID",
+        )
+    return user_id
+
+
 CurrentUserToken = Annotated[dict, Depends(get_current_user_token)]
 PlexToken = Annotated[str, Depends(get_plex_token)]
+UserId = Annotated[int, Depends(get_user_id)]

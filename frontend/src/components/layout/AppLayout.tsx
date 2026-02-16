@@ -1,16 +1,19 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../hooks/useAuth";
 import {
   useServers,
   useLibraries,
   getServerName,
 } from "../../hooks/useMediaItems";
+import { listConversations } from "../../api/agent";
 import styles from "./AppLayout.module.css";
 
 export function AppLayout() {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const { data: servers } = useServers();
   const firstServer = servers?.[0] ?? null;
@@ -36,6 +39,10 @@ export function AppLayout() {
   const currentLibraryKey =
     pathParts[1] === "movies" || pathParts[1] === "shows" ? pathParts[2] : null;
 
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
+
   const movieLibraries = libraries?.filter((lib) => lib.type === "movie") || [];
   const showLibraries = libraries?.filter((lib) => lib.type === "show") || [];
 
@@ -46,9 +53,33 @@ export function AppLayout() {
     )}&machine=${encodeURIComponent(clientIdentifier!)}`;
   };
 
+  const closeMenu = () => setMenuOpen(false);
+
   return (
     <div className={styles.layout}>
-      <nav className={styles.sidebar}>
+      <div className={styles.mobileHeader}>
+        <button
+          className={styles.hamburgerButton}
+          onClick={() => setMenuOpen((prev) => !prev)}
+          aria-label="Toggle menu"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+        <h1 className={styles.mobileHeaderTitle}>Plexy Media Dashboard</h1>
+        <div style={{ width: 24 }} />
+      </div>
+
+      <div
+        className={`${styles.overlay} ${menuOpen ? styles.overlayVisible : ""}`}
+        onClick={closeMenu}
+        data-testid="menu-overlay"
+      />
+
+      <nav className={`${styles.sidebar} ${menuOpen ? styles.sidebarOpen : ""}`}>
         <div className={styles.sidebarHeader}>
           <h1 className={styles.sidebarTitle}>Plexy Media Dashboard</h1>
         </div>
@@ -63,6 +94,7 @@ export function AppLayout() {
                 <NavLink
                   key={lib.key}
                   to={buildLibraryPath(lib)}
+                  onClick={closeMenu}
                   className={({ isActive }) =>
                     `${styles.navLink} ${
                       isActive || currentLibraryKey === lib.key
@@ -87,6 +119,7 @@ export function AppLayout() {
                 <NavLink
                   key={lib.key}
                   to={buildLibraryPath(lib)}
+                  onClick={closeMenu}
                   className={({ isActive }) =>
                     `${styles.navLink} ${
                       isActive || currentLibraryKey === lib.key
@@ -110,6 +143,8 @@ export function AppLayout() {
             to={`/agent?server=${encodeURIComponent(
               serverName ?? ""
             )}&machine=${encodeURIComponent(clientIdentifier ?? "")}`}
+            end
+            onClick={closeMenu}
             className={({ isActive }) =>
               `${styles.agentNavLink} ${
                 isActive ? styles.agentNavLinkActive : ""
@@ -119,6 +154,11 @@ export function AppLayout() {
             <img src="/plexy.png" alt="Plexy" className={styles.agentIcon} />
             <span>Plexy Assistant</span>
           </NavLink>
+          <ConversationList
+            serverName={serverName}
+            clientIdentifier={clientIdentifier}
+            onNavigate={closeMenu}
+          />
         </div>
 
         <div className={styles.sidebarFooter}>
@@ -152,6 +192,46 @@ export function AppLayout() {
       <main className={styles.main}>
         <Outlet />
       </main>
+    </div>
+  );
+}
+
+function ConversationList({
+  serverName,
+  clientIdentifier,
+  onNavigate,
+}: {
+  serverName: string | null;
+  clientIdentifier: string | null;
+  onNavigate?: () => void;
+}) {
+  const { data: conversations } = useQuery({
+    queryKey: ["conversations"],
+    queryFn: listConversations,
+    staleTime: 30 * 1000,
+  });
+
+  if (!conversations || conversations.length === 0) return null;
+
+  return (
+    <div className={styles.conversationList}>
+      {conversations.map((conv) => (
+        <NavLink
+          key={conv.conversation_id}
+          to={`/agent/${conv.conversation_id}?server=${encodeURIComponent(
+            serverName ?? ""
+          )}&machine=${encodeURIComponent(clientIdentifier ?? "")}`}
+          onClick={onNavigate}
+          className={({ isActive }) =>
+            `${styles.conversationLink} ${
+              isActive ? styles.conversationLinkActive : ""
+            }`
+          }
+          title={conv.title}
+        >
+          {conv.title}
+        </NavLink>
+      ))}
     </div>
   );
 }

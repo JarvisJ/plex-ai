@@ -21,12 +21,14 @@ def mock_settings():
 
 @pytest.fixture
 def mock_cache_svc():
-    return MagicMock(spec=CacheService)
+    cache = MagicMock(spec=CacheService)
+    cache._redis = MagicMock()
+    return cache
 
 
 @pytest.fixture(autouse=True)
 def _override_deps(mock_settings, mock_cache_svc):
-    app.dependency_overrides[get_agent_deps] = lambda: ("test-token", mock_settings, mock_cache_svc)
+    app.dependency_overrides[get_agent_deps] = lambda: ("test-token", 123, mock_settings, mock_cache_svc)
     yield
     app.dependency_overrides.clear()
 
@@ -93,3 +95,72 @@ class TestClearConversation:
 
         assert response.status_code == 200
         assert "not found" in response.json()["message"].lower()
+
+
+class TestListConversations:
+    async def test_list_empty(self, client: AsyncClient):
+        with patch("app.routers.agent._make_conversation_store") as mock_store_fn:
+            mock_store = MagicMock()
+            mock_store.list_conversations.return_value = []
+            mock_store_fn.return_value = mock_store
+
+            response = await client.get("/api/agent/conversations")
+
+        assert response.status_code == 200
+        assert response.json() == []
+
+    async def test_list_returns_summaries(self, client: AsyncClient):
+        from app.models.agent import ConversationSummary
+
+        summaries = [
+            ConversationSummary(
+                conversation_id="abc",
+                title="Hello world",
+                created_at=1000.0,
+                updated_at=2000.0,
+            )
+        ]
+        with patch("app.routers.agent._make_conversation_store") as mock_store_fn:
+            mock_store = MagicMock()
+            mock_store.list_conversations.return_value = summaries
+            mock_store_fn.return_value = mock_store
+
+            response = await client.get("/api/agent/conversations")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["conversation_id"] == "abc"
+        assert data[0]["title"] == "Hello world"
+
+
+class TestGetConversation:
+    async def test_found(self, client: AsyncClient):
+        from app.models.agent import AgentMessage, ConversationHistory
+
+        history = ConversationHistory(
+            conversation_id="abc",
+            title="Hello",
+            messages=[AgentMessage(role="user", content="Hi", media_items=[])],
+        )
+        with patch("app.routers.agent._make_conversation_store") as mock_store_fn:
+            mock_store = MagicMock()
+            mock_store.get_display_messages.return_value = history
+            mock_store_fn.return_value = mock_store
+
+            response = await client.get("/api/agent/conversation/abc")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["conversation_id"] == "abc"
+        assert len(data["messages"]) == 1
+
+    async def test_not_found(self, client: AsyncClient):
+        with patch("app.routers.agent._make_conversation_store") as mock_store_fn:
+            mock_store = MagicMock()
+            mock_store.get_display_messages.return_value = None
+            mock_store_fn.return_value = mock_store
+
+            response = await client.get("/api/agent/conversation/nonexistent")
+
+        assert response.status_code == 404

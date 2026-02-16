@@ -4,15 +4,15 @@ import { renderHook, act } from '@testing-library/react';
 // Mock the agent API before importing hook
 vi.mock('../../api/agent', () => ({
   sendMessageStream: vi.fn(),
-  clearConversation: vi.fn(),
+  getConversation: vi.fn(),
 }));
 
 import { useAgent } from '../useAgent';
-import { sendMessageStream, clearConversation } from '../../api/agent';
+import { sendMessageStream, getConversation } from '../../api/agent';
 
 beforeEach(() => {
   vi.mocked(sendMessageStream).mockReset();
-  vi.mocked(clearConversation).mockReset();
+  vi.mocked(getConversation).mockReset();
 });
 
 describe('useAgent', () => {
@@ -51,6 +51,7 @@ describe('useAgent', () => {
       expect(result.current.messages[1].role).toBe('assistant');
       expect(result.current.messages[1].content).toBe('Hello World');
       expect(result.current.isLoading).toBe(false);
+      expect(result.current.conversationId).toBe('conv-123');
     });
 
     it('handles error during streaming', async () => {
@@ -74,15 +75,53 @@ describe('useAgent', () => {
     });
   });
 
+  describe('loadConversation', () => {
+    it('loads conversation and sets messages', async () => {
+      vi.mocked(getConversation).mockResolvedValue({
+        conversation_id: 'conv-456',
+        title: 'Test',
+        messages: [
+          { role: 'user', content: 'Hello', media_items: [] },
+          { role: 'assistant', content: 'Hi there', media_items: [] },
+        ],
+      });
+
+      const { result } = renderHook(() => useAgent('TestServer'));
+
+      await act(async () => {
+        await result.current.loadConversation('conv-456');
+      });
+
+      expect(getConversation).toHaveBeenCalledWith('conv-456');
+      expect(result.current.messages.length).toBe(2);
+      expect(result.current.messages[0].role).toBe('user');
+      expect(result.current.messages[0].content).toBe('Hello');
+      expect(result.current.messages[1].role).toBe('assistant');
+      expect(result.current.messages[1].content).toBe('Hi there');
+      expect(result.current.conversationId).toBe('conv-456');
+    });
+
+    it('sets error on load failure', async () => {
+      vi.mocked(getConversation).mockRejectedValue(new Error('Not found'));
+
+      const { result } = renderHook(() => useAgent('TestServer'));
+
+      await act(async () => {
+        await result.current.loadConversation('bad-id');
+      });
+
+      expect(result.current.error).toBe('Failed to load conversation');
+    });
+  });
+
   describe('reset', () => {
-    it('clears conversation if exists', async () => {
+    it('clears state after conversation exists', async () => {
       vi.mocked(sendMessageStream).mockImplementation(
         async (_msg, _server, _convId, callbacks) => {
           callbacks.onConversationId('conv-123');
           callbacks.onDone();
         }
       );
-      vi.mocked(clearConversation).mockResolvedValue(undefined);
 
       const { result } = renderHook(() => useAgent('TestServer'));
 
@@ -92,22 +131,21 @@ describe('useAgent', () => {
       });
 
       // Then reset
-      await act(async () => {
-        await result.current.reset();
+      act(() => {
+        result.current.reset();
       });
 
-      expect(clearConversation).toHaveBeenCalledWith('conv-123');
       expect(result.current.messages).toEqual([]);
+      expect(result.current.conversationId).toBeNull();
     });
 
-    it('clears state without conversation', async () => {
+    it('clears state without conversation', () => {
       const { result } = renderHook(() => useAgent('TestServer'));
 
-      await act(async () => {
-        await result.current.reset();
+      act(() => {
+        result.current.reset();
       });
 
-      expect(clearConversation).not.toHaveBeenCalled();
       expect(result.current.messages).toEqual([]);
       expect(result.current.error).toBeNull();
     });
