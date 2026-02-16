@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getThumbnailUrl } from "../../api/media";
 import type { MediaItem } from "../../api/media";
 import { useWatchlist } from "../../contexts/WatchlistContext";
@@ -18,6 +19,7 @@ const PERCENT_FORMATTER = new Intl.NumberFormat("en-US", {
 });
 
 export function MediaCard({ item, serverName, clientIdentifier }: MediaCardProps) {
+  const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { isOnWatchlist } = useWatchlist();
   const onWatchlist = isOnWatchlist(item.guid);
@@ -37,6 +39,17 @@ export function MediaCard({ item, serverName, clientIdentifier }: MediaCardProps
   const handleWatchlistClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsModalOpen(true);
+  };
+
+  const handleAskPlexy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const yearSuffix = item.year ? ` (${item.year})` : "";
+    const prompt = `Tell me about ${item.title}${yearSuffix}. Include critic and user reviews, cast, box office info, and any other interesting details.`;
+    const params = new URLSearchParams();
+    if (serverName) params.set("server", serverName);
+    if (clientIdentifier) params.set("machine", clientIdentifier);
+    params.set("prompt", prompt);
+    navigate(`/agent?${params.toString()}`);
   };
 
   const formatDuration = (ms: number | null): string => {
@@ -142,6 +155,14 @@ export function MediaCard({ item, serverName, clientIdentifier }: MediaCardProps
           >
             Watch
           </a>
+        )}
+        {serverName && (
+          <button
+            onClick={handleAskPlexy}
+            className={styles.askPlexyButton}
+          >
+            Ask Plexy
+          </button>
         )}
       </div>
 

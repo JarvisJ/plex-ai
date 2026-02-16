@@ -35,6 +35,7 @@ cd /opt/plex
 
 # Clone repository
 git clone --branch ${github_branch} ${github_repo} repo
+chown -R ec2-user:ec2-user repo
 cd repo/deploy
 
 # Fetch secrets from SSM Parameter Store and write .env

@@ -16,7 +16,7 @@ const TOOL_NAMES: Record<string, string> = {
 };
 
 export function AgentPage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { conversationId: urlConversationId } = useParams<{
     conversationId: string;
   }>();
@@ -43,6 +43,23 @@ export function AgentPage() {
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  // Auto-send prompt from query param (e.g., from "Ask Plexy" button)
+  const promptParam = searchParams.get("prompt");
+  const promptSentRef = useRef(false);
+
+  useEffect(() => {
+    if (promptParam && serverName && !isLoading && !promptSentRef.current && messages.length === 0) {
+      promptSentRef.current = true;
+      sendMessage(promptParam);
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("prompt");
+        return next;
+      }, { replace: true });
+    }
+  }, [promptParam, serverName, isLoading, messages.length, sendMessage, setSearchParams, queryClient]);
 
   // Load conversation from URL param
   useEffect(() => {

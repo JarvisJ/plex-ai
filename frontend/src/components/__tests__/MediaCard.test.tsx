@@ -1,7 +1,18 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { MediaCard } from '../media/MediaCard';
 import type { MediaItem } from '../../api/media';
+
+const mockNavigate = vi.fn();
+
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
 
 // Mock dependencies
 vi.mock('../../contexts/WatchlistContext', () => ({
@@ -48,9 +59,17 @@ function makeItem(overrides: Partial<MediaItem> = {}): MediaItem {
   };
 }
 
+function renderWithRouter(ui: React.ReactElement) {
+  return render(<MemoryRouter>{ui}</MemoryRouter>);
+}
+
 describe('MediaCard', () => {
+  beforeEach(() => {
+    mockNavigate.mockReset();
+  });
+
   it('renders title, year, and genres', () => {
-    render(<MediaCard item={makeItem()} />);
+    renderWithRouter(<MediaCard item={makeItem()} />);
 
     expect(screen.getByText('Test Movie')).toBeInTheDocument();
     expect(screen.getByText('2024')).toBeInTheDocument();
@@ -59,34 +78,38 @@ describe('MediaCard', () => {
   });
 
   it('renders content rating', () => {
-    render(<MediaCard item={makeItem()} />);
+    renderWithRouter(<MediaCard item={makeItem()} />);
     expect(screen.getByText('PG-13')).toBeInTheDocument();
   });
 
   it('renders rating as percentage', () => {
-    render(<MediaCard item={makeItem({ rating: 8.5 })} />);
+    renderWithRouter(<MediaCard item={makeItem({ rating: 8.5 })} />);
     expect(screen.getByText('85%')).toBeInTheDocument();
   });
 
   it('shows No Image when no thumb', () => {
-    render(<MediaCard item={makeItem({ thumb: null })} />);
+    renderWithRouter(<MediaCard item={makeItem({ thumb: null })} />);
     expect(screen.getAllByText('No Image').length).toBeGreaterThan(0);
   });
 
   it('shows Plex link only with clientIdentifier', () => {
     const { rerender } = render(
-      <MediaCard item={makeItem()} serverName="Server" clientIdentifier={null} />
+      <MemoryRouter>
+        <MediaCard item={makeItem()} serverName="Server" clientIdentifier={null} />
+      </MemoryRouter>
     );
     expect(screen.queryByText('Watch')).not.toBeInTheDocument();
 
     rerender(
-      <MediaCard item={makeItem()} serverName="Server" clientIdentifier="cid-123" />
+      <MemoryRouter>
+        <MediaCard item={makeItem()} serverName="Server" clientIdentifier="cid-123" />
+      </MemoryRouter>
     );
     expect(screen.getByText('Watch')).toBeInTheDocument();
   });
 
   it('shows season count for shows', () => {
-    render(
+    renderWithRouter(
       <MediaCard
         item={makeItem({ type: 'show', season_count: 3 })}
       />
@@ -95,12 +118,39 @@ describe('MediaCard', () => {
   });
 
   it('renders duration for movies', () => {
-    render(<MediaCard item={makeItem({ duration_ms: 7200000 })} />);
+    renderWithRouter(<MediaCard item={makeItem({ duration_ms: 7200000 })} />);
     expect(screen.getByText('2h 0m')).toBeInTheDocument();
   });
 
   it('renders minutes only for short duration', () => {
-    render(<MediaCard item={makeItem({ duration_ms: 2400000 })} />);
+    renderWithRouter(<MediaCard item={makeItem({ duration_ms: 2400000 })} />);
     expect(screen.getByText('40m')).toBeInTheDocument();
+  });
+
+  it('renders Ask Plexy button when serverName is provided', () => {
+    renderWithRouter(<MediaCard item={makeItem()} serverName="MyServer" />);
+    expect(screen.getByText('Ask Plexy')).toBeInTheDocument();
+  });
+
+  it('does not render Ask Plexy button when serverName is null', () => {
+    renderWithRouter(<MediaCard item={makeItem()} serverName={null} />);
+    expect(screen.queryByText('Ask Plexy')).not.toBeInTheDocument();
+  });
+
+  it('navigates to /agent with correct prompt when Ask Plexy is clicked', () => {
+    renderWithRouter(
+      <MediaCard item={makeItem()} serverName="MyServer" clientIdentifier="cid-123" />
+    );
+
+    fireEvent.click(screen.getByText('Ask Plexy'));
+
+    expect(mockNavigate).toHaveBeenCalledTimes(1);
+    const navigatedUrl = mockNavigate.mock.calls[0][0] as string;
+    expect(navigatedUrl).toContain('/agent?');
+    const params = new URLSearchParams(navigatedUrl.split('?')[1]);
+    expect(params.get('server')).toBe('MyServer');
+    expect(params.get('machine')).toBe('cid-123');
+    expect(params.get('prompt')).toContain('Test Movie');
+    expect(params.get('prompt')).toContain('2024');
   });
 });
