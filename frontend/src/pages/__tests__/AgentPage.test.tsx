@@ -252,4 +252,15 @@ describe('AgentPage', () => {
     renderAgentPage('/agent?server=MyServer&machine=abc123');
     expect(mockLoadConversation).not.toHaveBeenCalled();
   });
+
+  it('auto-sends message when prompt query param is present', () => {
+    const prompt = 'Tell me about Inception (2010).';
+    renderAgentPage(`/agent?server=MyServer&machine=abc123&prompt=${encodeURIComponent(prompt)}`);
+    expect(mockSendMessage).toHaveBeenCalledWith(prompt);
+  });
+
+  it('does not auto-send when no prompt param', () => {
+    renderAgentPage('/agent?server=MyServer&machine=abc123');
+    expect(mockSendMessage).not.toHaveBeenCalled();
+  });
 });
