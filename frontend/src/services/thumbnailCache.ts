@@ -120,24 +120,74 @@ export async function clearThumbnailCache(): Promise<void> {
   }
 }
 
-export async function fetchAndCacheThumbnail(url: string): Promise<string> {
+const MAX_CONCURRENT_FETCHES = 6;
+let activeFetches = 0;
+const fetchQueue: Array<{ resolve: () => void; signal?: AbortSignal }> = [];
+
+function releaseFetchSlot(): void {
+  activeFetches--;
+  const next = fetchQueue.shift();
+  if (next) {
+    activeFetches++;
+    next.resolve();
+  }
+}
+
+function acquireFetchSlot(signal?: AbortSignal): Promise<void> {
+  if (activeFetches < MAX_CONCURRENT_FETCHES) {
+    activeFetches++;
+    return Promise.resolve();
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    const entry = { resolve, signal };
+    fetchQueue.push(entry);
+
+    if (signal) {
+      const onAbort = () => {
+        const index = fetchQueue.indexOf(entry);
+        if (index !== -1) {
+          fetchQueue.splice(index, 1);
+          reject(new DOMException('Aborted', 'AbortError'));
+        }
+      };
+      if (signal.aborted) {
+        onAbort();
+        return;
+      }
+      signal.addEventListener('abort', onAbort, { once: true });
+    }
+  });
+}
+
+export async function fetchAndCacheThumbnail(
+  url: string,
+  signal?: AbortSignal,
+): Promise<string> {
   // Check cache first
   const cached = await getCachedThumbnail(url);
   if (cached) {
     return cached;
   }
 
-  // Fetch from server
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch thumbnail: ${response.status}`);
+  // Wait for a fetch slot (respects abort signal while queued)
+  await acquireFetchSlot(signal);
+
+  try {
+    // Fetch from server
+    const response = await fetch(url, { signal });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch thumbnail: ${response.status}`);
+    }
+
+    const blob = await response.blob();
+
+    // Cache the blob
+    await cacheThumbnail(url, blob);
+
+    // Return object URL
+    return URL.createObjectURL(blob);
+  } finally {
+    releaseFetchSlot();
   }
-
-  const blob = await response.blob();
-
-  // Cache the blob
-  await cacheThumbnail(url, blob);
-
-  // Return object URL
-  return URL.createObjectURL(blob);
 }

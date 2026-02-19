@@ -1,8 +1,7 @@
 import asyncio
 import logging
 
-import httpx
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import Response
 
 from app.config import Settings, get_settings
@@ -14,6 +13,8 @@ from app.services.plex_client import PlexClientService
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/media", tags=["media"])
+
+_thumbnail_semaphore = asyncio.Semaphore(10)
 
 
 def get_plex_client(
@@ -86,6 +87,7 @@ def get_plex_client_flexible(
 
 @router.get("/thumbnail")
 async def get_thumbnail(
+    request: Request,
     server_name: str,
     path: str,
     plex_client: PlexClientService = Depends(get_plex_client_flexible),
@@ -105,11 +107,12 @@ async def get_thumbnail(
         )
 
     try:
-        thumbnail_url = await asyncio.to_thread(
-            plex_client.get_thumbnail_url, server_name, path
-        )
-        async with httpx.AsyncClient(verify=False) as client:
-            response = await client.get(thumbnail_url, timeout=30)
+        async with _thumbnail_semaphore:
+            thumbnail_url = await asyncio.to_thread(
+                plex_client.get_thumbnail_url, server_name, path
+            )
+            http_client = request.app.state.http_client
+            response = await http_client.get(thumbnail_url, timeout=30)
             response.raise_for_status()
 
             # Cache the thumbnail (shared across all users)

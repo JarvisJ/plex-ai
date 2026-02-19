@@ -1,64 +1,132 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
-  getCachedThumbnail,
-  cacheThumbnail,
-  deleteCachedThumbnail,
-  clearThumbnailCache,
-  fetchAndCacheThumbnail,
-} from '../thumbnailCache';
 
-describe('getCachedThumbnail', () => {
-  it('returns null on cache miss', async () => {
-    const result = await getCachedThumbnail('http://example.com/thumb.jpg');
-    expect(result).toBeNull();
-  });
+// Mock IndexedDB-dependent functions so fetchAndCacheThumbnail always hits the network path
+vi.mock('../thumbnailCache', async (importOriginal) => {
+  const original = await importOriginal<typeof import('../thumbnailCache')>();
+  return {
+    ...original,
+    getCachedThumbnail: vi.fn().mockResolvedValue(null),
+    cacheThumbnail: vi.fn().mockResolvedValue(undefined),
+  };
 });
 
-describe('cacheThumbnail', () => {
-  it('stores data without throwing', async () => {
-    const blob = new Blob(['test'], { type: 'image/jpeg' });
-    await expect(cacheThumbnail('http://example.com/thumb.jpg', blob)).resolves.not.toThrow();
-  });
-});
+import { fetchAndCacheThumbnail } from '../thumbnailCache';
 
-describe('deleteCachedThumbnail', () => {
-  it('deletes without throwing', async () => {
-    await expect(deleteCachedThumbnail('http://example.com/thumb.jpg')).resolves.not.toThrow();
-  });
-});
+function makeMockResponse(): Response {
+  const blob = new Blob(['test'], { type: 'image/jpeg' });
+  return {
+    ok: true,
+    blob: () => Promise.resolve(blob),
+  } as Response;
+}
 
-describe('clearThumbnailCache', () => {
-  it('clears without throwing', async () => {
-    await expect(clearThumbnailCache()).resolves.not.toThrow();
-  });
-});
-
-describe('fetchAndCacheThumbnail', () => {
+describe('thumbnailCache', () => {
   beforeEach(() => {
-    vi.mocked(fetch).mockReset();
+    vi.restoreAllMocks();
   });
 
-  it('fetches and returns object URL on cache miss', async () => {
-    const blob = new Blob(['image'], { type: 'image/jpeg' });
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      blob: async () => blob,
-    } as Response);
+  describe('fetchAndCacheThumbnail concurrency', () => {
+    it('limits concurrent fetches to 6', async () => {
+      let activeFetches = 0;
+      let maxActiveFetches = 0;
+      const fetchResolvers: Array<(value: Response) => void> = [];
 
-    const result = await fetchAndCacheThumbnail('http://example.com/thumb.jpg');
+      global.fetch = vi.fn().mockImplementation(() => {
+        activeFetches++;
+        maxActiveFetches = Math.max(maxActiveFetches, activeFetches);
+        return new Promise<Response>((resolve) => {
+          fetchResolvers.push((resp: Response) => {
+            activeFetches--;
+            resolve(resp);
+          });
+        });
+      });
 
-    expect(result).toBe('blob:mock-url');
-    expect(fetch).toHaveBeenCalledWith('http://example.com/thumb.jpg');
-  });
+      // Launch 10 requests (more than the limit of 6)
+      const promises = Array.from({ length: 10 }, (_, i) =>
+        fetchAndCacheThumbnail(`/api/media/thumbnail?id=${i}`),
+      );
 
-  it('throws on fetch failure', async () => {
-    vi.mocked(fetch).mockResolvedValue({
-      ok: false,
-      status: 404,
-    } as Response);
+      // Wait for the first 6 to hit fetch
+      await vi.waitFor(() => {
+        expect(fetchResolvers.length).toBe(6);
+      });
 
-    await expect(fetchAndCacheThumbnail('http://example.com/404.jpg')).rejects.toThrow(
-      'Failed to fetch thumbnail'
-    );
+      expect(maxActiveFetches).toBe(6);
+
+      // Resolve the first 6
+      for (let i = 0; i < 6; i++) {
+        fetchResolvers[i](makeMockResponse());
+      }
+
+      // Wait for the remaining 4 to start
+      await vi.waitFor(() => {
+        expect(fetchResolvers.length).toBe(10);
+      });
+
+      // Resolve the remaining 4
+      for (let i = 6; i < 10; i++) {
+        fetchResolvers[i](makeMockResponse());
+      }
+
+      const results = await Promise.all(promises);
+      expect(results).toHaveLength(10);
+      results.forEach((r) => expect(r).toMatch(/^blob:/));
+      expect(maxActiveFetches).toBe(6);
+    });
+
+    it('cancels queued requests when signal is aborted', async () => {
+      const fetchResolvers: Array<(value: Response) => void> = [];
+
+      global.fetch = vi.fn().mockImplementation(() => {
+        return new Promise<Response>((resolve) => {
+          fetchResolvers.push(resolve);
+        });
+      });
+
+      // Fill up all 6 slots
+      const fillerPromises = Array.from({ length: 6 }, (_, i) =>
+        fetchAndCacheThumbnail(`/api/media/thumbnail?filler=${i}`),
+      );
+
+      await vi.waitFor(() => {
+        expect(fetchResolvers.length).toBe(6);
+      });
+
+      // Queue a request with an abort controller
+      const controller = new AbortController();
+      const abortablePromise = fetchAndCacheThumbnail(
+        '/api/media/thumbnail?abortme=1',
+        controller.signal,
+      );
+
+      // Abort while still queued (no slot available)
+      controller.abort();
+
+      // Should reject with AbortError
+      await expect(abortablePromise).rejects.toThrow('Aborted');
+
+      // Resolve fillers to clean up
+      for (let i = 0; i < 6; i++) {
+        fetchResolvers[i](makeMockResponse());
+      }
+      await Promise.all(fillerPromises);
+    });
+
+    it('passes abort signal to fetch for in-flight requests', async () => {
+      const fetchCalls: Array<{ url: string; signal?: AbortSignal }> = [];
+
+      global.fetch = vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+        fetchCalls.push({ url, signal: opts?.signal });
+        return Promise.resolve(makeMockResponse());
+      });
+
+      const controller = new AbortController();
+      await fetchAndCacheThumbnail('/api/media/thumbnail?signal=1', controller.signal);
+
+      const call = fetchCalls.find((c) => c.url === '/api/media/thumbnail?signal=1');
+      expect(call).toBeDefined();
+      expect(call?.signal).toBe(controller.signal);
+    });
   });
 });

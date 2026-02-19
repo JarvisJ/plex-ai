@@ -1,3 +1,7 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
+import httpx
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -6,7 +10,19 @@ from starlette.responses import Response
 from app.config import get_settings
 from app.routers import agent_router, auth_router, media_router
 
-app = FastAPI(title="Plex API", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    app.state.http_client = httpx.AsyncClient(
+        limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
+        verify=False,
+        timeout=30,
+    )
+    yield
+    await app.state.http_client.aclose()
+
+
+app = FastAPI(title="Plex API", version="0.1.0", lifespan=lifespan)
 
 _settings = get_settings()
 ALLOWED_ORIGINS = [_settings.frontend_url, "http://localhost:5173"]

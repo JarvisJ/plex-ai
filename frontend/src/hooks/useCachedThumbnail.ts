@@ -16,34 +16,46 @@ export function useCachedThumbnail(url: string | null): {
       return;
     }
 
-    let cancelled = false;
+    const controller = new AbortController();
     let objectUrl: string | null = null;
 
     const loadThumbnail = async () => {
+      // Wait 150ms before fetching — if the component unmounts (e.g. scrolled
+      // past) the abort will cancel before the request is ever made.
+      await new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(resolve, 300);
+        controller.signal.addEventListener('abort', () => {
+          clearTimeout(timer);
+          reject(new DOMException('Aborted', 'AbortError'));
+        }, { once: true });
+      });
+
       setIsLoading(true);
       setError(null);
 
       try {
-        objectUrl = await fetchAndCacheThumbnail(url);
-        if (!cancelled) {
+        objectUrl = await fetchAndCacheThumbnail(url, controller.signal);
+        if (!controller.signal.aborted) {
           setSrc(objectUrl);
         }
       } catch (e) {
-        if (!cancelled) {
+        if (!controller.signal.aborted) {
           setError(e instanceof Error ? e : new Error('Failed to load thumbnail'));
           setSrc(null);
         }
       } finally {
-        if (!cancelled) {
+        if (!controller.signal.aborted) {
           setIsLoading(false);
         }
       }
     };
 
-    loadThumbnail();
+    loadThumbnail().catch(() => {
+      // AbortError from the delay is expected — suppress
+    });
 
     return () => {
-      cancelled = true;
+      controller.abort();
       // Revoke the object URL when the component unmounts or URL changes
       if (objectUrl) {
         URL.revokeObjectURL(objectUrl);

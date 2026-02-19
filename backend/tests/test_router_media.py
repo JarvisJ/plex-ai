@@ -145,16 +145,14 @@ class TestGetThumbnail:
             status_code = 200
             def raise_for_status(self): pass
 
-        class FakeHttpxClient:
-            async def __aenter__(self): return self
-            async def __aexit__(self, *args): pass
-            async def get(self, url, **kwargs): return FakeResponse()
+        mock_http_client = AsyncMock()
+        mock_http_client.get.return_value = FakeResponse()
+        app.state.http_client = mock_http_client
 
-        with patch("app.routers.media.httpx.AsyncClient", return_value=FakeHttpxClient()):
-            response = await client.get(
-                "/api/media/thumbnail",
-                params={"server_name": "MyServer", "path": "/thumb/1"},
-            )
+        response = await client.get(
+            "/api/media/thumbnail",
+            params={"server_name": "MyServer", "path": "/thumb/1"},
+        )
 
         assert response.status_code == 200
         assert response.headers.get("x-cache") == "MISS"

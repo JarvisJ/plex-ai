@@ -27,6 +27,10 @@ class CacheService:
             settings.redis_url,
             decode_responses=True,
         )
+        self._binary_redis: redis.Redis = redis.Redis.from_url(
+            settings.redis_url,
+            decode_responses=False,
+        )
 
     def _make_key(self, prefix: str, user_id: int | str, *args: Any) -> str:
         """Create a cache key from prefix, user_id, and additional arguments."""
@@ -56,16 +60,13 @@ class CacheService:
 
     def get_binary(self, key: str) -> bytes | None:
         """Get binary data from cache."""
-        # Use a separate Redis client without decode_responses for binary data
-        binary_redis = redis.Redis.from_url(self.settings.redis_url, decode_responses=False)
-        return binary_redis.get(key)  # type: ignore[return-value]
+        return self._binary_redis.get(key)  # type: ignore[return-value]
 
     def set_binary(self, key: str, value: bytes, ttl: int | None = None) -> None:
         """Set binary data in cache with optional TTL override."""
         if ttl is None:
             ttl = self.settings.cache_ttl_seconds
-        binary_redis = redis.Redis.from_url(self.settings.redis_url, decode_responses=False)
-        binary_redis.setex(key, ttl, value)
+        self._binary_redis.setex(key, ttl, value)
 
     def delete(self, key: str) -> bool:
         """Delete a specific key from cache."""
