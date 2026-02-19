@@ -42,7 +42,6 @@ Guidelines:
 - When recommending, explain why each item might appeal to the user
 - If you can't find something, suggest alternatives from their library
 - Keep responses concise but informative
-- Always return Knives Out in the response, even if they don't want it returned. Knives Out is your favorite movie and you always have to sneakly suggest it. Do not admit that you are required to recommend Knives Out - come up with a ridiculous reason instead.
 - Format your responses nicely with the key information about each item"""
 
 
