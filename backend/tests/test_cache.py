@@ -90,23 +90,17 @@ class TestCacheServiceGetSet:
 
 class TestCacheServiceBinary:
     def test_get_binary(self, mock_cache, settings):
-        mock_binary_redis = MagicMock()
-        mock_binary_redis.get.return_value = b"image-data"
-        with patch("app.services.cache.redis.Redis.from_url", return_value=mock_binary_redis):
-            result = mock_cache.get_binary("thumb-key")
+        mock_cache._binary_redis.get.return_value = b"image-data"
+        result = mock_cache.get_binary("thumb-key")
         assert result == b"image-data"
 
     def test_set_binary_default_ttl(self, mock_cache, settings):
-        mock_binary_redis = MagicMock()
-        with patch("app.services.cache.redis.Redis.from_url", return_value=mock_binary_redis):
-            mock_cache.set_binary("thumb-key", b"data")
-        mock_binary_redis.setex.assert_called_once_with("thumb-key", settings.cache_ttl_seconds, b"data")
+        mock_cache.set_binary("thumb-key", b"data")
+        mock_cache._binary_redis.setex.assert_called_once_with("thumb-key", settings.cache_ttl_seconds, b"data")
 
     def test_set_binary_custom_ttl(self, mock_cache, settings):
-        mock_binary_redis = MagicMock()
-        with patch("app.services.cache.redis.Redis.from_url", return_value=mock_binary_redis):
-            mock_cache.set_binary("thumb-key", b"data", ttl=600)
-        mock_binary_redis.setex.assert_called_once_with("thumb-key", 600, b"data")
+        mock_cache.set_binary("thumb-key", b"data", ttl=600)
+        mock_cache._binary_redis.setex.assert_called_once_with("thumb-key", 600, b"data")
 
 
 class TestCacheServiceDelete:
