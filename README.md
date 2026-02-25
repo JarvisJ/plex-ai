@@ -1,3 +1,5 @@
+Disclaimer: this project was primarily vibe coded using Claude Code.
+
 # Plex Media Browser
 
 A full-stack application for browsing and discovering content in your Plex media library. Features an AI-powered assistant that can search your library, make personalized recommendations, and answer questions about movies and TV shows.
