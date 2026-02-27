@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { MediaCard } from '../media/MediaCard';
+import { MediaCard } from './MediaCard';
 import type { MediaItem } from '../../api/media';
 
 const mockNavigate = vi.fn();
@@ -31,7 +31,7 @@ vi.mock('../../hooks/useIntersectionObserver', () => ({
   useIntersectionObserver: () => [{ current: null }, false],
 }));
 
-vi.mock('../media/WatchlistModal', () => ({
+vi.mock('./WatchlistModal', () => ({
   WatchlistModal: () => null,
 }));
 
@@ -59,17 +59,26 @@ function makeItem(overrides: Partial<MediaItem> = {}): MediaItem {
   };
 }
 
-function renderWithRouter(ui: React.ReactElement) {
-  return render(<MemoryRouter>{ui}</MemoryRouter>);
+interface SetupOptions {
+  item?: MediaItem;
+  serverName?: string | null;
+  clientIdentifier?: string | null;
+}
+
+function setup({ item, serverName, clientIdentifier }: SetupOptions = {}) {
+  const resolvedItem = item ?? makeItem();
+  mockNavigate.mockReset();
+  const renderResult = render(
+    <MemoryRouter>
+      <MediaCard item={resolvedItem} serverName={serverName} clientIdentifier={clientIdentifier} />
+    </MemoryRouter>
+  );
+  return { item: resolvedItem, mockNavigate, ...renderResult };
 }
 
 describe('MediaCard', () => {
-  beforeEach(() => {
-    mockNavigate.mockReset();
-  });
-
   it('renders title, year, and genres', () => {
-    renderWithRouter(<MediaCard item={makeItem()} />);
+    setup();
 
     expect(screen.getByText('Test Movie')).toBeInTheDocument();
     expect(screen.getByText('2024')).toBeInTheDocument();
@@ -78,26 +87,22 @@ describe('MediaCard', () => {
   });
 
   it('renders content rating', () => {
-    renderWithRouter(<MediaCard item={makeItem()} />);
+    setup();
     expect(screen.getByText('PG-13')).toBeInTheDocument();
   });
 
   it('renders rating as percentage', () => {
-    renderWithRouter(<MediaCard item={makeItem({ rating: 8.5 })} />);
+    setup({ item: makeItem({ rating: 8.5 }) });
     expect(screen.getByText('85%')).toBeInTheDocument();
   });
 
   it('shows No Image when no thumb', () => {
-    renderWithRouter(<MediaCard item={makeItem({ thumb: null })} />);
+    setup({ item: makeItem({ thumb: null }) });
     expect(screen.getAllByText('No Image').length).toBeGreaterThan(0);
   });
 
   it('shows Plex link only with clientIdentifier', () => {
-    const { rerender } = render(
-      <MemoryRouter>
-        <MediaCard item={makeItem()} serverName="Server" clientIdentifier={null} />
-      </MemoryRouter>
-    );
+    const { rerender } = setup({ serverName: 'Server', clientIdentifier: null });
     expect(screen.queryByText('Watch')).not.toBeInTheDocument();
 
     rerender(
@@ -109,38 +114,32 @@ describe('MediaCard', () => {
   });
 
   it('shows season count for shows', () => {
-    renderWithRouter(
-      <MediaCard
-        item={makeItem({ type: 'show', season_count: 3 })}
-      />
-    );
+    setup({ item: makeItem({ type: 'show', season_count: 3 }) });
     expect(screen.getByText('3 seasons')).toBeInTheDocument();
   });
 
   it('renders duration for movies', () => {
-    renderWithRouter(<MediaCard item={makeItem({ duration_ms: 7200000 })} />);
+    setup({ item: makeItem({ duration_ms: 7200000 }) });
     expect(screen.getByText('2h 0m')).toBeInTheDocument();
   });
 
   it('renders minutes only for short duration', () => {
-    renderWithRouter(<MediaCard item={makeItem({ duration_ms: 2400000 })} />);
+    setup({ item: makeItem({ duration_ms: 2400000 }) });
     expect(screen.getByText('40m')).toBeInTheDocument();
   });
 
   it('renders Ask Plexy button when serverName is provided', () => {
-    renderWithRouter(<MediaCard item={makeItem()} serverName="MyServer" />);
+    setup({ serverName: 'MyServer' });
     expect(screen.getByText('Ask Plexy')).toBeInTheDocument();
   });
 
   it('does not render Ask Plexy button when serverName is null', () => {
-    renderWithRouter(<MediaCard item={makeItem()} serverName={null} />);
+    setup({ serverName: null });
     expect(screen.queryByText('Ask Plexy')).not.toBeInTheDocument();
   });
 
   it('navigates to /agent with correct prompt when Ask Plexy is clicked', () => {
-    renderWithRouter(
-      <MediaCard item={makeItem()} serverName="MyServer" clientIdentifier="cid-123" />
-    );
+    const { mockNavigate } = setup({ serverName: 'MyServer', clientIdentifier: 'cid-123' });
 
     fireEvent.click(screen.getByText('Ask Plexy'));
 

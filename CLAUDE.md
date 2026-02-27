@@ -103,16 +103,16 @@ ssh ec2-user@<IP> "cd /opt/plex/repo && sudo git pull && cd deploy && sudo docke
 
 ### When to write tests
 
-- **New component or page**: Create a test file in the nearest `__tests__/` directory (e.g., `components/__tests__/MyComponent.test.tsx`)
-- **New hook**: Create a test file in `hooks/__tests__/`
-- **New API function**: Create a test file in `api/__tests__/`
+- **New component or page**: Create the test file in the same directory as the source (e.g., `components/agent/MyComponent.test.tsx` next to `components/agent/MyComponent.tsx`)
+- **New hook**: Create the test file next to the hook (e.g., `hooks/useMyHook.test.ts`)
+- **New API function**: Create the test file next to the module (e.g., `api/myModule.test.ts`)
 - **Modified component/hook/API logic**: Update existing tests to cover the change, and add new test cases for new behavior
 - **Bug fix**: Add a regression test that would have caught the bug
 
 ### Test conventions
 
 - **Framework**: Vitest + React Testing Library (frontend), pytest (backend)
-- **File location**: Tests live in `__tests__/` directories adjacent to source files
+- **File location**: Tests live alongside the source file — `Foo.tsx` and `Foo.test.tsx` in the same directory
 - **Mocking pattern**: Use `vi.mock()` with hoisted mocks. Declare mutable mock state (`let mockX = ...`) above `vi.mock()` calls so the factory closures read current values on each render
 - **Router wrapping**: Components using React Router must be wrapped in `<MemoryRouter>` with appropriate routes
 - **Naming**: Test files match source: `MyComponent.tsx` → `MyComponent.test.tsx`

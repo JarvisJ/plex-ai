@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock IndexedDB-dependent functions so fetchAndCacheThumbnail always hits the network path
-vi.mock('../thumbnailCache', async (importOriginal) => {
-  const original = await importOriginal<typeof import('../thumbnailCache')>();
+vi.mock('./thumbnailCache', async (importOriginal) => {
+  const original = await importOriginal<typeof import('./thumbnailCache')>();
   return {
     ...original,
     getCachedThumbnail: vi.fn().mockResolvedValue(null),
@@ -10,7 +10,7 @@ vi.mock('../thumbnailCache', async (importOriginal) => {
   };
 });
 
-import { fetchAndCacheThumbnail } from '../thumbnailCache';
+import { fetchAndCacheThumbnail } from './thumbnailCache';
 
 function makeMockResponse(): Response {
   const blob = new Blob(['test'], { type: 'image/jpeg' });

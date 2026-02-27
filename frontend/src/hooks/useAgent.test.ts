@@ -2,13 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
 // Mock the agent API before importing hook
-vi.mock('../../api/agent', () => ({
+vi.mock('../api/agent', () => ({
   sendMessageStream: vi.fn(),
   getConversation: vi.fn(),
 }));
 
-import { useAgent } from '../useAgent';
-import { sendMessageStream, getConversation } from '../../api/agent';
+import { useAgent } from './useAgent';
+import { sendMessageStream, getConversation } from '../api/agent';
 
 beforeEach(() => {
   vi.mocked(sendMessageStream).mockReset();

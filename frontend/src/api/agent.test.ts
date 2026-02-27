@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { sendMessageStream, clearConversation, listConversations, getConversation } from '../agent';
-import type { StreamCallbacks } from '../agent';
+import { describe, it, expect, vi } from 'vitest';
+import { sendMessageStream, clearConversation, listConversations, getConversation } from './agent';
+import type { StreamCallbacks } from './agent';
 
 function makeCallbacks(): StreamCallbacks {
   return {
@@ -24,14 +24,15 @@ function makeSSE(events: string[]): ReadableStream<Uint8Array> {
   });
 }
 
-describe('sendMessageStream', () => {
-  beforeEach(() => {
-    vi.mocked(fetch).mockReset();
-    vi.mocked(localStorage.getItem).mockReturnValue('test-token');
-  });
+function setup({ token = 'test-token' }: { token?: string | null } = {}) {
+  vi.mocked(fetch).mockReset();
+  vi.mocked(localStorage.getItem).mockReturnValue(token);
+  return { fetch: vi.mocked(fetch) };
+}
 
+describe('sendMessageStream', () => {
   it('calls onError when not authenticated', async () => {
-    vi.mocked(localStorage.getItem).mockReturnValue(null);
+    setup({ token: null });
     const callbacks = makeCallbacks();
 
     await sendMessageStream('hello', 'server', undefined, callbacks);
@@ -40,7 +41,8 @@ describe('sendMessageStream', () => {
   });
 
   it('calls onError on non-ok response', async () => {
-    vi.mocked(fetch).mockResolvedValue({
+    const { fetch } = setup();
+    fetch.mockResolvedValue({
       ok: false,
       status: 503,
       json: async () => ({ detail: 'Service unavailable' }),
@@ -53,7 +55,8 @@ describe('sendMessageStream', () => {
   });
 
   it('calls onError when no response body', async () => {
-    vi.mocked(fetch).mockResolvedValue({
+    const { fetch } = setup();
+    fetch.mockResolvedValue({
       ok: true,
       body: null,
     } as Response);
@@ -65,11 +68,9 @@ describe('sendMessageStream', () => {
   });
 
   it('handles conversation_id event', async () => {
+    const { fetch } = setup();
     const stream = makeSSE(['{"type":"conversation_id","conversation_id":"abc-123"}']);
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      body: stream,
-    } as Response);
+    fetch.mockResolvedValue({ ok: true, body: stream } as Response);
 
     const callbacks = makeCallbacks();
     await sendMessageStream('hello', 'server', undefined, callbacks);
@@ -78,11 +79,9 @@ describe('sendMessageStream', () => {
   });
 
   it('handles tool_call event', async () => {
+    const { fetch } = setup();
     const stream = makeSSE(['{"type":"tool_call","tool":"search_library"}']);
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      body: stream,
-    } as Response);
+    fetch.mockResolvedValue({ ok: true, body: stream } as Response);
 
     const callbacks = makeCallbacks();
     await sendMessageStream('hello', 'server', undefined, callbacks);
@@ -91,11 +90,9 @@ describe('sendMessageStream', () => {
   });
 
   it('handles content event', async () => {
+    const { fetch } = setup();
     const stream = makeSSE(['{"type":"content","content":"Hello world"}']);
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      body: stream,
-    } as Response);
+    fetch.mockResolvedValue({ ok: true, body: stream } as Response);
 
     const callbacks = makeCallbacks();
     await sendMessageStream('hello', 'server', undefined, callbacks);
@@ -104,12 +101,10 @@ describe('sendMessageStream', () => {
   });
 
   it('handles media_items event', async () => {
+    const { fetch } = setup();
     const items = [{ rating_key: '1', title: 'Movie', type: 'movie' }];
     const stream = makeSSE([JSON.stringify({ type: 'media_items', items })]);
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      body: stream,
-    } as Response);
+    fetch.mockResolvedValue({ ok: true, body: stream } as Response);
 
     const callbacks = makeCallbacks();
     await sendMessageStream('hello', 'server', undefined, callbacks);
@@ -118,11 +113,9 @@ describe('sendMessageStream', () => {
   });
 
   it('handles done event', async () => {
+    const { fetch } = setup();
     const stream = makeSSE(['{"type":"done"}']);
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      body: stream,
-    } as Response);
+    fetch.mockResolvedValue({ ok: true, body: stream } as Response);
 
     const callbacks = makeCallbacks();
     await sendMessageStream('hello', 'server', undefined, callbacks);
@@ -131,11 +124,9 @@ describe('sendMessageStream', () => {
   });
 
   it('skips invalid JSON lines', async () => {
+    const { fetch } = setup();
     const stream = makeSSE(['not-json', '{"type":"done"}']);
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      body: stream,
-    } as Response);
+    fetch.mockResolvedValue({ ok: true, body: stream } as Response);
 
     const callbacks = makeCallbacks();
     await sendMessageStream('hello', 'server', undefined, callbacks);
@@ -145,13 +136,9 @@ describe('sendMessageStream', () => {
 });
 
 describe('clearConversation', () => {
-  beforeEach(() => {
-    vi.mocked(fetch).mockReset();
-    vi.mocked(localStorage.getItem).mockReturnValue('test-token');
-  });
-
   it('calls DELETE endpoint', async () => {
-    vi.mocked(fetch).mockResolvedValue({
+    const { fetch } = setup();
+    fetch.mockResolvedValue({
       ok: true,
       json: async () => ({ message: 'Cleared' }),
     } as Response);
@@ -166,16 +153,12 @@ describe('clearConversation', () => {
 });
 
 describe('listConversations', () => {
-  beforeEach(() => {
-    vi.mocked(fetch).mockReset();
-    vi.mocked(localStorage.getItem).mockReturnValue('test-token');
-  });
-
   it('fetches conversations list', async () => {
+    const { fetch } = setup();
     const mockData = [
       { conversation_id: 'c1', title: 'Chat 1', created_at: 1000, updated_at: 2000 },
     ];
-    vi.mocked(fetch).mockResolvedValue({
+    fetch.mockResolvedValue({
       ok: true,
       json: async () => mockData,
     } as Response);
@@ -195,18 +178,14 @@ describe('listConversations', () => {
 });
 
 describe('getConversation', () => {
-  beforeEach(() => {
-    vi.mocked(fetch).mockReset();
-    vi.mocked(localStorage.getItem).mockReturnValue('test-token');
-  });
-
   it('fetches conversation by id', async () => {
+    const { fetch } = setup();
     const mockData = {
       conversation_id: 'c1',
       title: 'Chat 1',
       messages: [{ role: 'user', content: 'Hi', media_items: [] }],
     };
-    vi.mocked(fetch).mockResolvedValue({
+    fetch.mockResolvedValue({
       ok: true,
       json: async () => mockData,
     } as Response);

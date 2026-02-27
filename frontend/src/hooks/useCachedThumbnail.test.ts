@@ -3,11 +3,11 @@ import { renderHook, act } from '@testing-library/react';
 
 let mockFetchAndCache: ReturnType<typeof vi.fn>;
 
-vi.mock('../../services/thumbnailCache', () => ({
+vi.mock('../services/thumbnailCache', () => ({
   fetchAndCacheThumbnail: (...args: unknown[]) => mockFetchAndCache(...args),
 }));
 
-import { useCachedThumbnail } from '../useCachedThumbnail';
+import { useCachedThumbnail } from './useCachedThumbnail';
 
 beforeEach(() => {
   mockFetchAndCache = vi.fn().mockResolvedValue('blob:http://localhost/thumb');

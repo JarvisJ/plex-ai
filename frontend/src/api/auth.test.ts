@@ -1,15 +1,17 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createPin, checkPin, exchangeToken, getCurrentUser } from '../auth';
+import { describe, it, expect, vi } from 'vitest';
+import { createPin, checkPin, exchangeToken, getCurrentUser } from './auth';
 
-beforeEach(() => {
+function setup({ token = null }: { token?: string | null } = {}) {
   vi.mocked(fetch).mockReset();
-  vi.mocked(localStorage.getItem).mockReturnValue(null);
+  vi.mocked(localStorage.getItem).mockReturnValue(token);
   vi.mocked(localStorage.setItem).mockClear();
-});
+  return { fetch: vi.mocked(fetch) };
+}
 
 describe('createPin', () => {
   it('calls POST without auth', async () => {
-    vi.mocked(fetch).mockResolvedValue({
+    const { fetch } = setup();
+    fetch.mockResolvedValue({
       ok: true,
       json: async () => ({ id: 1, code: 'ABC', auth_url: 'https://plex.tv/auth' }),
     } as Response);
@@ -21,7 +23,7 @@ describe('createPin', () => {
       expect.objectContaining({ method: 'POST' })
     );
     // No Authorization header
-    const headers = vi.mocked(fetch).mock.calls[0][1]?.headers as Record<string, string>;
+    const headers = fetch.mock.calls[0][1]?.headers as Record<string, string>;
     expect(headers.Authorization).toBeUndefined();
     expect(result.id).toBe(1);
   });
@@ -29,14 +31,15 @@ describe('createPin', () => {
 
 describe('checkPin', () => {
   it('calls GET with params, no auth', async () => {
-    vi.mocked(fetch).mockResolvedValue({
+    const { fetch } = setup();
+    fetch.mockResolvedValue({
       ok: true,
       json: async () => ({ id: 1, code: 'ABC', auth_token: null }),
     } as Response);
 
     await checkPin(1, 'ABC');
 
-    const url = vi.mocked(fetch).mock.calls[0][0] as string;
+    const url = fetch.mock.calls[0][0] as string;
     expect(url).toContain('/api/auth/pin/1');
     expect(url).toContain('code=ABC');
   });
@@ -44,7 +47,8 @@ describe('checkPin', () => {
 
 describe('exchangeToken', () => {
   it('calls POST and sets auth token on success', async () => {
-    vi.mocked(fetch).mockResolvedValue({
+    const { fetch } = setup();
+    fetch.mockResolvedValue({
       ok: true,
       json: async () => ({ access_token: 'jwt-123', token_type: 'bearer' }),
     } as Response);
@@ -58,8 +62,8 @@ describe('exchangeToken', () => {
 
 describe('getCurrentUser', () => {
   it('calls GET with auth', async () => {
-    vi.mocked(localStorage.getItem).mockReturnValue('my-token');
-    vi.mocked(fetch).mockResolvedValue({
+    const { fetch } = setup({ token: 'my-token' });
+    fetch.mockResolvedValue({
       ok: true,
       json: async () => ({ id: 42, username: 'test', email: null, thumb: null }),
     } as Response);
@@ -67,7 +71,7 @@ describe('getCurrentUser', () => {
     const result = await getCurrentUser();
 
     expect(result.username).toBe('test');
-    const headers = vi.mocked(fetch).mock.calls[0][1]?.headers as Record<string, string>;
+    const headers = fetch.mock.calls[0][1]?.headers as Record<string, string>;
     expect(headers.Authorization).toBe('Bearer my-token');
   });
 });

@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ApiError, apiFetch, setAuthToken, clearAuthToken, isAuthenticated } from '../client';
+import { describe, it, expect, vi } from 'vitest';
+import { ApiError, apiFetch, setAuthToken, clearAuthToken, isAuthenticated } from './client';
 
 describe('ApiError', () => {
   it('sets status and message', () => {
@@ -11,43 +11,48 @@ describe('ApiError', () => {
 });
 
 describe('auth token helpers', () => {
-  beforeEach(() => {
+  function setup() {
     localStorage.clear();
     vi.mocked(localStorage.getItem).mockClear();
     vi.mocked(localStorage.setItem).mockClear();
     vi.mocked(localStorage.removeItem).mockClear();
-  });
+  }
 
   it('setAuthToken stores token', () => {
+    setup();
     setAuthToken('my-token');
     expect(localStorage.setItem).toHaveBeenCalledWith('auth_token', 'my-token');
   });
 
   it('clearAuthToken removes token', () => {
+    setup();
     clearAuthToken();
     expect(localStorage.removeItem).toHaveBeenCalledWith('auth_token');
   });
 
   it('isAuthenticated returns true when token exists', () => {
+    setup();
     vi.mocked(localStorage.getItem).mockReturnValue('token');
     expect(isAuthenticated()).toBe(true);
   });
 
   it('isAuthenticated returns false when no token', () => {
+    setup();
     vi.mocked(localStorage.getItem).mockReturnValue(null);
     expect(isAuthenticated()).toBe(false);
   });
 });
 
 describe('apiFetch', () => {
-  beforeEach(() => {
+  function setup({ token = null }: { token?: string | null } = {}) {
     vi.mocked(fetch).mockReset();
-    vi.mocked(localStorage.getItem).mockReturnValue(null);
-  });
+    vi.mocked(localStorage.getItem).mockReturnValue(token);
+    return { fetch: vi.mocked(fetch) };
+  }
 
   it('adds Bearer header when authenticated', async () => {
-    vi.mocked(localStorage.getItem).mockReturnValue('my-token');
-    vi.mocked(fetch).mockResolvedValue({
+    const { fetch } = setup({ token: 'my-token' });
+    fetch.mockResolvedValue({
       ok: true,
       json: async () => ({ data: 'ok' }),
     } as Response);
@@ -65,25 +70,26 @@ describe('apiFetch', () => {
   });
 
   it('throws 401 when no token and auth required', async () => {
-    vi.mocked(localStorage.getItem).mockReturnValue(null);
+    setup();
     await expect(apiFetch('/api/test')).rejects.toThrow('Not authenticated');
   });
 
   it('skips auth header when requiresAuth is false', async () => {
-    vi.mocked(fetch).mockResolvedValue({
+    const { fetch } = setup();
+    fetch.mockResolvedValue({
       ok: true,
       json: async () => ({ data: 'ok' }),
     } as Response);
 
     await apiFetch('/api/test', { requiresAuth: false });
 
-    const callHeaders = vi.mocked(fetch).mock.calls[0][1]?.headers as Record<string, string>;
+    const callHeaders = fetch.mock.calls[0][1]?.headers as Record<string, string>;
     expect(callHeaders.Authorization).toBeUndefined();
   });
 
   it('returns parsed JSON on success', async () => {
-    vi.mocked(localStorage.getItem).mockReturnValue('token');
-    vi.mocked(fetch).mockResolvedValue({
+    const { fetch } = setup({ token: 'token' });
+    fetch.mockResolvedValue({
       ok: true,
       json: async () => ({ message: 'hello' }),
     } as Response);
@@ -93,8 +99,8 @@ describe('apiFetch', () => {
   });
 
   it('throws ApiError with detail on error response', async () => {
-    vi.mocked(localStorage.getItem).mockReturnValue('token');
-    vi.mocked(fetch).mockResolvedValue({
+    const { fetch } = setup({ token: 'token' });
+    fetch.mockResolvedValue({
       ok: false,
       status: 400,
       json: async () => ({ detail: 'Bad input' }),
@@ -104,8 +110,8 @@ describe('apiFetch', () => {
   });
 
   it('throws ApiError with fallback message when no detail', async () => {
-    vi.mocked(localStorage.getItem).mockReturnValue('token');
-    vi.mocked(fetch).mockResolvedValue({
+    const { fetch } = setup({ token: 'token' });
+    fetch.mockResolvedValue({
       ok: false,
       status: 500,
       json: async () => ({}),
@@ -115,8 +121,8 @@ describe('apiFetch', () => {
   });
 
   it('merges custom headers', async () => {
-    vi.mocked(localStorage.getItem).mockReturnValue('token');
-    vi.mocked(fetch).mockResolvedValue({
+    const { fetch } = setup({ token: 'token' });
+    fetch.mockResolvedValue({
       ok: true,
       json: async () => ({}),
     } as Response);
@@ -125,7 +131,7 @@ describe('apiFetch', () => {
       headers: { 'X-Custom': 'value' },
     });
 
-    const callHeaders = vi.mocked(fetch).mock.calls[0][1]?.headers as Record<string, string>;
+    const callHeaders = fetch.mock.calls[0][1]?.headers as Record<string, string>;
     expect(callHeaders['X-Custom']).toBe('value');
     expect(callHeaders['Content-Type']).toBe('application/json');
   });

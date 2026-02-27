@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { LibraryFilters } from '../library/LibraryFilters';
+import { LibraryFilters } from './LibraryFilters';
 import type { MediaItem } from '../../api/media';
 
 function makeItem(overrides: Partial<MediaItem> = {}): MediaItem {
@@ -27,38 +27,62 @@ function makeItem(overrides: Partial<MediaItem> = {}): MediaItem {
   };
 }
 
-const defaultProps = {
-  items: [
+interface SetupOptions {
+  searchQuery?: string;
+  selectedGenres?: Set<string>;
+  selectedYears?: Set<number>;
+  selectedContentRatings?: Set<string>;
+}
+
+function setup({
+  searchQuery = '',
+  selectedGenres = new Set<string>(),
+  selectedYears = new Set<number>(),
+  selectedContentRatings = new Set<string>(),
+}: SetupOptions = {}) {
+  const onSearchChange = vi.fn();
+  const onGenresChange = vi.fn();
+  const onYearsChange = vi.fn();
+  const onContentRatingsChange = vi.fn();
+
+  const items = [
     makeItem({ rating_key: '1', genres: ['Action', 'Drama'], year: 2024, content_rating: 'PG-13' }),
     makeItem({ rating_key: '2', genres: ['Comedy'], year: 2023, content_rating: 'R' }),
     makeItem({ rating_key: '3', genres: ['Action'], year: 2024, content_rating: 'PG-13' }),
-  ],
-  searchQuery: '',
-  onSearchChange: vi.fn(),
-  selectedGenres: new Set<string>(),
-  onGenresChange: vi.fn(),
-  selectedYears: new Set<number>(),
-  onYearsChange: vi.fn(),
-  selectedContentRatings: new Set<string>(),
-  onContentRatingsChange: vi.fn(),
-};
+  ];
+
+  render(
+    <LibraryFilters
+      items={items}
+      searchQuery={searchQuery}
+      onSearchChange={onSearchChange}
+      selectedGenres={selectedGenres}
+      onGenresChange={onGenresChange}
+      selectedYears={selectedYears}
+      onYearsChange={onYearsChange}
+      selectedContentRatings={selectedContentRatings}
+      onContentRatingsChange={onContentRatingsChange}
+    />
+  );
+
+  return { onSearchChange, onGenresChange, onYearsChange, onContentRatingsChange };
+}
 
 describe('LibraryFilters', () => {
   it('renders search input', () => {
-    render(<LibraryFilters {...defaultProps} />);
+    setup();
     expect(screen.getByPlaceholderText('Search title & description...')).toBeInTheDocument();
   });
 
   it('renders filter buttons', () => {
-    render(<LibraryFilters {...defaultProps} />);
+    setup();
     expect(screen.getByText('Genre')).toBeInTheDocument();
     expect(screen.getByText('Year')).toBeInTheDocument();
     expect(screen.getByText('Rating')).toBeInTheDocument();
   });
 
   it('fires onChange on search input', () => {
-    const onSearchChange = vi.fn();
-    render(<LibraryFilters {...defaultProps} onSearchChange={onSearchChange} />);
+    const { onSearchChange } = setup();
 
     const input = screen.getByPlaceholderText('Search title & description...');
     fireEvent.change(input, { target: { value: 'test' } });
@@ -67,20 +91,19 @@ describe('LibraryFilters', () => {
   });
 
   it('shows clear button when search has value', () => {
-    render(<LibraryFilters {...defaultProps} searchQuery="test" />);
+    setup({ searchQuery: 'test' });
     expect(screen.getByText('×')).toBeInTheDocument();
   });
 
   it('clear button clears search', () => {
-    const onSearchChange = vi.fn();
-    render(<LibraryFilters {...defaultProps} searchQuery="test" onSearchChange={onSearchChange} />);
+    const { onSearchChange } = setup({ searchQuery: 'test' });
 
     fireEvent.click(screen.getByText('×'));
     expect(onSearchChange).toHaveBeenCalledWith('');
   });
 
   it('opens dropdown on click', () => {
-    render(<LibraryFilters {...defaultProps} />);
+    setup();
 
     fireEvent.click(screen.getByText('Genre'));
 
@@ -89,32 +112,12 @@ describe('LibraryFilters', () => {
   });
 
   it('shows clear all filters button when filters active', () => {
-    render(
-      <LibraryFilters
-        {...defaultProps}
-        selectedGenres={new Set(['Action'])}
-      />
-    );
-
+    setup({ selectedGenres: new Set(['Action']) });
     expect(screen.getByText('Clear filters')).toBeInTheDocument();
   });
 
   it('clear all filters resets everything', () => {
-    const onSearchChange = vi.fn();
-    const onGenresChange = vi.fn();
-    const onYearsChange = vi.fn();
-    const onContentRatingsChange = vi.fn();
-
-    render(
-      <LibraryFilters
-        {...defaultProps}
-        searchQuery="test"
-        onSearchChange={onSearchChange}
-        onGenresChange={onGenresChange}
-        onYearsChange={onYearsChange}
-        onContentRatingsChange={onContentRatingsChange}
-      />
-    );
+    const { onSearchChange, onGenresChange, onYearsChange, onContentRatingsChange } = setup({ searchQuery: 'test' });
 
     fireEvent.click(screen.getByText('Clear filters'));
 

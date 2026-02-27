@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   getThumbnailUrl,
   getServers,
@@ -9,20 +9,21 @@ import {
   getWatchlistStatus,
   addToWatchlist,
   removeFromWatchlist,
-} from '../media';
+} from './media';
 
-beforeEach(() => {
+function setup({ token = 'test-token' }: { token?: string } = {}) {
   vi.mocked(fetch).mockReset();
-  vi.mocked(localStorage.getItem).mockReturnValue('test-token');
+  vi.mocked(localStorage.getItem).mockReturnValue(token);
   vi.mocked(fetch).mockResolvedValue({
     ok: true,
     json: async () => ({}),
   } as Response);
-});
+  return { fetch: vi.mocked(fetch) };
+}
 
 describe('getThumbnailUrl', () => {
   it('encodes params and includes token', () => {
-    vi.mocked(localStorage.getItem).mockReturnValue('my-token');
+    setup({ token: 'my-token' });
     const url = getThumbnailUrl('My Server', '/library/thumb/123');
     expect(url).toContain('server_name=My%20Server');
     expect(url).toContain('path=%2Flibrary%2Fthumb%2F123');
@@ -32,6 +33,7 @@ describe('getThumbnailUrl', () => {
 
 describe('getServers', () => {
   it('calls correct endpoint', async () => {
+    const { fetch } = setup();
     await getServers();
     expect(fetch).toHaveBeenCalledWith('/api/media/servers', expect.anything());
   });
@@ -39,6 +41,7 @@ describe('getServers', () => {
 
 describe('getLibraries', () => {
   it('calls with server_name param', async () => {
+    const { fetch } = setup();
     await getLibraries('MyServer');
     expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining('/api/media/libraries?server_name=MyServer'),
@@ -49,8 +52,9 @@ describe('getLibraries', () => {
 
 describe('getLibraryItems', () => {
   it('calls with pagination params', async () => {
+    const { fetch } = setup();
     await getLibraryItems('Server', '1', 10, 25);
-    const url = vi.mocked(fetch).mock.calls[0][0] as string;
+    const url = fetch.mock.calls[0][0] as string;
     expect(url).toContain('offset=10');
     expect(url).toContain('limit=25');
   });
@@ -58,6 +62,7 @@ describe('getLibraryItems', () => {
 
 describe('clearCache', () => {
   it('calls DELETE', async () => {
+    const { fetch } = setup();
     await clearCache();
     expect(fetch).toHaveBeenCalledWith(
       '/api/media/cache',
@@ -68,6 +73,7 @@ describe('clearCache', () => {
 
 describe('getWatchlist', () => {
   it('calls correct endpoint', async () => {
+    const { fetch } = setup();
     await getWatchlist();
     expect(fetch).toHaveBeenCalledWith('/api/media/watchlist', expect.anything());
   });
@@ -75,8 +81,9 @@ describe('getWatchlist', () => {
 
 describe('getWatchlistStatus', () => {
   it('calls with params', async () => {
+    const { fetch } = setup();
     await getWatchlistStatus('Server', '123');
-    const url = vi.mocked(fetch).mock.calls[0][0] as string;
+    const url = fetch.mock.calls[0][0] as string;
     expect(url).toContain('server_name=Server');
     expect(url).toContain('rating_key=123');
   });
@@ -84,6 +91,7 @@ describe('getWatchlistStatus', () => {
 
 describe('addToWatchlist', () => {
   it('calls POST', async () => {
+    const { fetch } = setup();
     await addToWatchlist('Server', '123');
     expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining('/api/media/watchlist'),
@@ -94,6 +102,7 @@ describe('addToWatchlist', () => {
 
 describe('removeFromWatchlist', () => {
   it('calls DELETE', async () => {
+    const { fetch } = setup();
     await removeFromWatchlist('Server', '123');
     expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining('/api/media/watchlist'),

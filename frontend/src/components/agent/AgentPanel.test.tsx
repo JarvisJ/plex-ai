@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 // Mock useAgent hook
@@ -24,41 +24,43 @@ vi.mock('react-markdown', () => ({
   default: ({ children }: { children: string }) => <div>{children}</div>,
 }));
 
-import { AgentPanel } from '../agent/AgentPanel';
+import { AgentPanel } from './AgentPanel';
 
-beforeEach(() => {
+interface SetupOptions {
+  isOpen?: boolean;
+  onClose?: () => void;
+  serverName?: string;
+}
+
+function setup({ isOpen = true, onClose, serverName = 'Server' }: SetupOptions = {}) {
+  const resolvedOnClose = onClose ?? vi.fn();
   mockSendMessage.mockReset();
   mockReset.mockReset();
-});
+  const renderResult = render(
+    <AgentPanel isOpen={isOpen} onClose={resolvedOnClose} serverName={serverName} clientIdentifier={null} />
+  );
+  return { onClose: resolvedOnClose, mockSendMessage, mockReset, ...renderResult };
+}
 
 describe('AgentPanel', () => {
   it('returns null when not open', () => {
-    const { container } = render(
-      <AgentPanel isOpen={false} onClose={vi.fn()} serverName="Server" clientIdentifier={null} />
-    );
+    const { container } = setup({ isOpen: false });
     expect(container.innerHTML).toBe('');
   });
 
   it('renders panel with input when open', () => {
-    render(
-      <AgentPanel isOpen={true} onClose={vi.fn()} serverName="Server" clientIdentifier={null} />
-    );
+    setup();
     expect(screen.getByPlaceholderText('Ask about your library...')).toBeInTheDocument();
     expect(screen.getByText(/Plexy the Plexbot/)).toBeInTheDocument();
   });
 
   it('renders suggestions when no messages', () => {
-    render(
-      <AgentPanel isOpen={true} onClose={vi.fn()} serverName="Server" clientIdentifier={null} />
-    );
+    setup();
     expect(screen.getByText('Ask me about your Plex library!')).toBeInTheDocument();
   });
 
   it('calls onClose when close button clicked', () => {
-    const onClose = vi.fn();
-    render(
-      <AgentPanel isOpen={true} onClose={onClose} serverName="Server" clientIdentifier={null} />
-    );
+    const { onClose } = setup();
 
     // Close button is the one with the X SVG
     const buttons = screen.getAllByRole('button');
@@ -69,20 +71,14 @@ describe('AgentPanel', () => {
   });
 
   it('new chat button calls reset', () => {
-    render(
-      <AgentPanel isOpen={true} onClose={vi.fn()} serverName="Server" clientIdentifier={null} />
-    );
-
+    const { mockReset } = setup();
     fireEvent.click(screen.getByText('New Chat'));
     expect(mockReset).toHaveBeenCalled();
   });
 
   it('submit sends trimmed message and clears input', async () => {
+    const { mockSendMessage } = setup();
     mockSendMessage.mockResolvedValue(undefined);
-
-    render(
-      <AgentPanel isOpen={true} onClose={vi.fn()} serverName="Server" clientIdentifier={null} />
-    );
 
     const input = screen.getByPlaceholderText('Ask about your library...');
     fireEvent.change(input, { target: { value: '  hello world  ' } });
@@ -94,9 +90,7 @@ describe('AgentPanel', () => {
   });
 
   it('does not submit empty input', () => {
-    render(
-      <AgentPanel isOpen={true} onClose={vi.fn()} serverName="Server" clientIdentifier={null} />
-    );
+    const { mockSendMessage } = setup();
 
     const input = screen.getByPlaceholderText('Ask about your library...');
     const form = input.closest('form')!;

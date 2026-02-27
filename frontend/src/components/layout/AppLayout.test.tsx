@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -40,7 +40,7 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-import { AppLayout } from '../layout/AppLayout';
+import { AppLayout } from './AppLayout';
 
 function renderWithRouter(initialRoute = '/dashboard') {
   const queryClient = new QueryClient({
@@ -63,29 +63,51 @@ function renderWithRouter(initialRoute = '/dashboard') {
   );
 }
 
-beforeEach(() => {
+const defaultAuthState = {
+  isAuthenticated: true,
+  user: { username: 'testuser' } as { username: string } | null,
+  logout: mockLogout,
+};
+
+const defaultServers = [{ name: 'MyServer', client_identifier: 'abc123', local: true }];
+
+const defaultLibraries = [
+  { key: '1', title: 'All Movies', type: 'movie', count: 42 },
+  { key: '2', title: '4K Movies', type: 'movie', count: 18 },
+  { key: '3', title: 'Anime', type: 'show', count: 35 },
+];
+
+interface SetupOptions {
+  authState?: { isAuthenticated?: boolean; user?: { username: string } | null };
+  servers?: { name: string; client_identifier: string; local: boolean }[] | undefined;
+  libraries?: { key: string; title: string; type: string; count: number | null }[] | undefined;
+  librariesLoading?: boolean;
+  conversations?: Array<{ conversation_id: string; title: string; created_at: number; updated_at: number }>;
+  initialRoute?: string;
+}
+
+function setup({
+  authState,
+  servers = defaultServers,
+  libraries = defaultLibraries,
+  librariesLoading = false,
+  conversations = [],
+  initialRoute = '/dashboard',
+}: SetupOptions = {}) {
   mockNavigate.mockReset();
   mockLogout.mockReset();
-  mockAuthState = {
-    isAuthenticated: true,
-    user: { username: 'testuser' },
-    logout: mockLogout,
-  };
-  mockServers = [
-    { name: 'MyServer', client_identifier: 'abc123', local: true },
-  ];
-  mockLibraries = [
-    { key: '1', title: 'All Movies', type: 'movie', count: 42 },
-    { key: '2', title: '4K Movies', type: 'movie', count: 18 },
-    { key: '3', title: 'Anime', type: 'show', count: 35 },
-  ];
-  mockLibrariesLoading = false;
-  mockConversations = [];
-});
+  mockAuthState = { ...defaultAuthState, ...authState };
+  mockServers = servers;
+  mockLibraries = libraries;
+  mockLibrariesLoading = librariesLoading;
+  mockConversations = conversations;
+  renderWithRouter(initialRoute);
+  return { mockLogout, mockNavigate };
+}
 
 describe('AppLayout', () => {
   it('renders sidebar with logo and title', () => {
-    renderWithRouter();
+    setup();
     const titles = screen.getAllByText('Plexy Media Dashboard');
     expect(titles.length).toBe(2); // mobile header + sidebar
     const logos = screen.getAllByAltText('Plexy');
@@ -93,12 +115,12 @@ describe('AppLayout', () => {
   });
 
   it('renders child route content via Outlet', () => {
-    renderWithRouter('/dashboard');
+    setup({ initialRoute: '/dashboard' });
     expect(screen.getByText('Dashboard Content')).toBeInTheDocument();
   });
 
   it('renders library nav links grouped by type with section labels', () => {
-    renderWithRouter();
+    setup();
 
     // Section labels
     expect(screen.getByText('Movies')).toBeInTheDocument();
@@ -111,7 +133,7 @@ describe('AppLayout', () => {
   });
 
   it('renders library counts next to nav links', () => {
-    renderWithRouter();
+    setup();
 
     expect(screen.getByText('42')).toBeInTheDocument();
     expect(screen.getByText('18')).toBeInTheDocument();
@@ -119,59 +141,50 @@ describe('AppLayout', () => {
   });
 
   it('does not render counts when count is null', () => {
-    mockLibraries = [
-      { key: '1', title: 'All Movies', type: 'movie', count: null },
-    ];
-    renderWithRouter();
+    setup({ libraries: [{ key: '1', title: 'All Movies', type: 'movie', count: null }] });
 
     expect(screen.getByText('All Movies')).toBeInTheDocument();
     expect(screen.queryByText('0')).not.toBeInTheDocument();
   });
 
   it('renders Plexy agent nav link', () => {
-    renderWithRouter();
+    setup();
     expect(screen.getByText('Plexy Assistant')).toBeInTheDocument();
   });
 
   it('renders username in sidebar footer', () => {
-    renderWithRouter();
+    setup();
     expect(screen.getByText('testuser')).toBeInTheDocument();
   });
 
   it('calls logout when Logout button is clicked', () => {
-    renderWithRouter();
+    const { mockLogout } = setup();
     fireEvent.click(screen.getByText('Logout'));
     expect(mockLogout).toHaveBeenCalled();
   });
 
   it('redirects to / when not authenticated', () => {
-    mockAuthState = {
-      isAuthenticated: false,
-      user: null,
-      logout: mockLogout,
-    };
-    renderWithRouter();
+    const { mockNavigate } = setup({ authState: { isAuthenticated: false, user: null } });
     expect(mockNavigate).toHaveBeenCalledWith('/');
   });
 
   it('shows loading text when libraries are loading', () => {
-    mockLibrariesLoading = true;
-    mockLibraries = undefined;
-    renderWithRouter();
+    setup({ librariesLoading: true, libraries: undefined });
     expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 
   it('does not show server selector with single server', () => {
-    renderWithRouter();
+    setup();
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
   });
 
   it('shows server selector with multiple servers', () => {
-    mockServers = [
-      { name: 'Server A', client_identifier: 'aaa', local: true },
-      { name: 'Server B', client_identifier: 'bbb', local: false },
-    ];
-    renderWithRouter();
+    setup({
+      servers: [
+        { name: 'Server A', client_identifier: 'aaa', local: true },
+        { name: 'Server B', client_identifier: 'bbb', local: false },
+      ],
+    });
     const select = screen.getByRole('combobox');
     expect(select).toBeInTheDocument();
     expect(screen.getByText('Server A (Local)')).toBeInTheDocument();
@@ -179,18 +192,19 @@ describe('AppLayout', () => {
   });
 
   it('changes selected server when selector changes', () => {
-    mockServers = [
-      { name: 'Server A', client_identifier: 'aaa', local: true },
-      { name: 'Server B', client_identifier: 'bbb', local: false },
-    ];
-    renderWithRouter();
+    setup({
+      servers: [
+        { name: 'Server A', client_identifier: 'aaa', local: true },
+        { name: 'Server B', client_identifier: 'bbb', local: false },
+      ],
+    });
     const select = screen.getByRole('combobox');
     fireEvent.change(select, { target: { value: 'bbb' } });
     expect((select as HTMLSelectElement).value).toBe('bbb');
   });
 
   it('builds correct movie library link paths', () => {
-    renderWithRouter();
+    setup();
     const link = screen.getByText('4K Movies').closest('a');
     expect(link?.getAttribute('href')).toContain('/movies/2');
     expect(link?.getAttribute('href')).toContain('server=MyServer');
@@ -198,35 +212,30 @@ describe('AppLayout', () => {
   });
 
   it('builds correct show library link paths', () => {
-    renderWithRouter();
+    setup();
     const link = screen.getByText('Anime').closest('a');
     expect(link?.getAttribute('href')).toContain('/shows/3');
     expect(link?.getAttribute('href')).toContain('server=MyServer');
   });
 
   it('does not render library sections when no libraries', () => {
-    mockLibraries = [];
-    renderWithRouter();
+    setup({ libraries: [] });
     expect(screen.queryByText('42')).not.toBeInTheDocument();
     expect(screen.queryByText('35')).not.toBeInTheDocument();
   });
 
   it('does not show username when user is null', () => {
-    mockAuthState = {
-      isAuthenticated: true,
-      user: null,
-      logout: mockLogout,
-    };
-    renderWithRouter();
+    setup({ authState: { isAuthenticated: true, user: null } });
     expect(screen.queryByText('testuser')).not.toBeInTheDocument();
   });
 
   it('renders conversation list when conversations exist', async () => {
-    mockConversations = [
-      { conversation_id: 'conv-1', title: 'What movies do I have?', created_at: 1000, updated_at: 2000 },
-      { conversation_id: 'conv-2', title: 'Recommend something', created_at: 1500, updated_at: 2500 },
-    ];
-    renderWithRouter();
+    setup({
+      conversations: [
+        { conversation_id: 'conv-1', title: 'What movies do I have?', created_at: 1000, updated_at: 2000 },
+        { conversation_id: 'conv-2', title: 'Recommend something', created_at: 1500, updated_at: 2500 },
+      ],
+    });
 
     // Conversations load async via useQuery
     expect(await screen.findByText('What movies do I have?')).toBeInTheDocument();
@@ -234,12 +243,12 @@ describe('AppLayout', () => {
   });
 
   it('renders hamburger menu button', () => {
-    renderWithRouter();
+    setup();
     expect(screen.getByLabelText('Toggle menu')).toBeInTheDocument();
   });
 
   it('toggles sidebarOpen class when hamburger is clicked', () => {
-    renderWithRouter();
+    setup();
     const hamburger = screen.getByLabelText('Toggle menu');
     const nav = document.querySelector('nav')!;
 
@@ -253,7 +262,7 @@ describe('AppLayout', () => {
   });
 
   it('closes menu when overlay is clicked', () => {
-    renderWithRouter();
+    setup();
     const hamburger = screen.getByLabelText('Toggle menu');
     const overlay = screen.getByTestId('menu-overlay');
 
@@ -266,10 +275,11 @@ describe('AppLayout', () => {
   });
 
   it('conversation links include correct href', async () => {
-    mockConversations = [
-      { conversation_id: 'conv-1', title: 'Test chat', created_at: 1000, updated_at: 2000 },
-    ];
-    renderWithRouter();
+    setup({
+      conversations: [
+        { conversation_id: 'conv-1', title: 'Test chat', created_at: 1000, updated_at: 2000 },
+      ],
+    });
 
     const link = await screen.findByText('Test chat');
     const anchor = link.closest('a');
