@@ -161,6 +161,82 @@
   color: var(--color-text-muted);
 }
 
+.watchlistFilter {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  user-select: none;
+}
+
+.watchlistFilter:hover {
+  background-color: var(--color-bg-primary);
+}
+
+.watchlistLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--color-text-primary);
+}
+
+.watchlistCount {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.watchlistCountActive {
+  color: var(--color-accent);
+}
+
+.toggleSwitch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.toggleSwitch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.slider {
+  position: absolute;
+  inset: 0;
+  background-color: var(--color-border);
+  border-radius: 20px;
+  transition: background-color 0.2s;
+}
+
+.slider::before {
+  content: '';
+  position: absolute;
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.toggleSwitch input:checked + .slider {
+  background-color: var(--color-accent);
+}
+
+.toggleSwitch input:checked + .slider::before {
+  transform: translateX(16px);
+}
+
 .clearAllButton {
   padding: var(--spacing-sm) var(--spacing-md);
   font-size: 14px;

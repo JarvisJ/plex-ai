@@ -346,6 +346,55 @@ class TestGetWatchlist:
         assert "Fallback Movie" in result[0].guid
 
 
+class TestGetRecentlyViewed:
+    def test_cache_hit(self, plex_client, mock_redis):
+        import json
+        cached_data = [{"rating_key": "1", "guid": "plex://movie/1", "title": "Cached Movie", "type": "movie"}]
+        mock_redis.get.return_value = json.dumps(cached_data)
+
+        result = plex_client.get_recently_viewed("MyServer")
+
+        assert len(result) == 1
+        assert isinstance(result[0], MediaItem)
+        assert result[0].title == "Cached Movie"
+
+    def test_cache_miss_fetches_from_sections(self, plex_client, mock_redis):
+        mock_redis.get.return_value = None
+
+        mock_server = MagicMock()
+        movie_section = MagicMock(type="movie")
+        show_section = MagicMock(type="show")
+        music_section = MagicMock(type="artist")
+
+        movie_section.search.return_value = [_make_mock_movie()]
+        show_section.search.return_value = [_make_mock_show()]
+        mock_server.library.sections.return_value = [movie_section, show_section, music_section]
+
+        with patch.object(plex_client, "_connect_to_server", return_value=mock_server):
+            result = plex_client.get_recently_viewed("MyServer")
+
+        assert len(result) == 2
+        assert result[0].type == "movie"
+        assert result[1].type == "show"
+        music_section.search.assert_not_called()
+        movie_section.search.assert_called_once_with(sort="lastViewedAt:desc", lastViewedAt__gte="90d")
+        show_section.search.assert_called_once_with(sort="lastViewedAt:desc", lastViewedAt__gte="90d")
+
+    def test_uses_short_ttl(self, plex_client, mock_redis):
+        mock_redis.get.return_value = None
+
+        mock_server = MagicMock()
+        mock_server.library.sections.return_value = []
+
+        with patch.object(plex_client, "_connect_to_server", return_value=mock_server):
+            plex_client.get_recently_viewed("MyServer")
+
+        # cache.set(key, value, ttl=300) calls redis.setex(key, 300, value)
+        mock_redis.setex.assert_called_once()
+        _, args, _ = mock_redis.setex.mock_calls[0]
+        assert args[1] == 300  # ttl is the second positional arg to setex
+
+
 class TestGetAllLibraryItems:
     def test_cache_hit(self, plex_client, mock_redis):
         cached_data = [{"rating_key": "1", "guid": "plex://movie/1", "title": "Cached", "type": "movie"}]

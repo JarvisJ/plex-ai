@@ -138,6 +138,29 @@ describe('MediaCard', () => {
     expect(screen.queryByText('Ask Plexy')).not.toBeInTheDocument();
   });
 
+  it('shows "Seen today" banner when viewed within 24 hours', () => {
+    const recentDate = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    setup({ item: makeItem({ last_viewed_at: recentDate }) });
+    expect(screen.getByText('Seen today')).toBeInTheDocument();
+  });
+
+  it('shows "Seen X days ago" banner when viewed within 3 months', () => {
+    const recentDate = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
+    setup({ item: makeItem({ last_viewed_at: recentDate }) });
+    expect(screen.getByText('Seen 5 days ago')).toBeInTheDocument();
+  });
+
+  it('does not show banner when last_viewed_at is null', () => {
+    setup({ item: makeItem({ last_viewed_at: null }) });
+    expect(screen.queryByText(/Seen/)).not.toBeInTheDocument();
+  });
+
+  it('does not show banner when last_viewed_at is older than 3 months', () => {
+    const oldDate = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString();
+    setup({ item: makeItem({ last_viewed_at: oldDate }) });
+    expect(screen.queryByText(/Seen/)).not.toBeInTheDocument();
+  });
+
   it('navigates to /agent with correct prompt when Ask Plexy is clicked', () => {
     const { mockNavigate } = setup({ serverName: 'MyServer', clientIdentifier: 'cid-123' });
 

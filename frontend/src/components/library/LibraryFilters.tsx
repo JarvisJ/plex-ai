@@ -18,6 +18,9 @@ interface LibraryFiltersProps {
   onYearsChange: (years: Set<number>) => void;
   selectedContentRatings: Set<string>;
   onContentRatingsChange: (ratings: Set<string>) => void;
+  watchlistOnly: boolean;
+  onWatchlistOnlyChange: (value: boolean) => void;
+  watchlistCount: number;
 }
 
 function MultiSelect({
@@ -114,6 +117,9 @@ export function LibraryFilters({
   onYearsChange,
   selectedContentRatings,
   onContentRatingsChange,
+  watchlistOnly,
+  onWatchlistOnlyChange,
+  watchlistCount,
 }: LibraryFiltersProps) {
   // Extract unique values and counts from items
   const genreOptions = useMemo(() => {
@@ -163,13 +169,15 @@ export function LibraryFilters({
     searchQuery ||
     selectedGenres.size > 0 ||
     selectedYears.size > 0 ||
-    selectedContentRatings.size > 0;
+    selectedContentRatings.size > 0 ||
+    watchlistOnly;
 
   const clearAllFilters = () => {
     onSearchChange("");
     onGenresChange(new Set());
     onYearsChange(new Set());
     onContentRatingsChange(new Set());
+    onWatchlistOnlyChange(false);
   };
 
   return (
@@ -193,6 +201,23 @@ export function LibraryFilters({
       </div>
 
       <div className={styles.filterGroup}>
+        <label className={styles.watchlistFilter}>
+          <span className={styles.watchlistLabel}>
+            Watchlist
+            <span className={`${styles.watchlistCount} ${watchlistOnly ? styles.watchlistCountActive : ""}`}>
+              ({watchlistCount})
+            </span>
+          </span>
+          <div className={styles.toggleSwitch}>
+            <input
+              type="checkbox"
+              checked={watchlistOnly}
+              onChange={(e) => onWatchlistOnlyChange(e.target.checked)}
+            />
+            <span className={styles.slider} />
+          </div>
+        </label>
+
         <MultiSelect
           label="Genre"
           options={genreOptions}

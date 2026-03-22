@@ -2,7 +2,8 @@
   background-color: var(--color-bg-secondary);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  transition: transform var(--transition-fast),
+  transition:
+    transform var(--transition-fast),
     box-shadow var(--transition-fast);
   cursor: pointer;
 }
@@ -70,6 +71,27 @@
 
 .watchlistIcon {
   flex-shrink: 0;
+}
+
+.recentBanner {
+  position: absolute;
+  top: 30px;
+  right: -28px;
+  width: 140px;
+  background-color: var(--color-accent);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 4px 0;
+  transform: rotate(45deg);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .rating {
@@ -153,7 +175,8 @@
   font-weight: 600;
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: background-color var(--transition-fast),
+  transition:
+    background-color var(--transition-fast),
     border-color var(--transition-fast),
     color var(--transition-fast);
 }

@@ -98,6 +98,20 @@ describe('apiFetch', () => {
     expect(result).toEqual({ message: 'hello' });
   });
 
+  it('clears token and redirects to / on 401 response', async () => {
+    const { fetch } = setup({ token: 'token' });
+    fetch.mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: async () => ({ detail: 'Unauthorized' }),
+    } as Response);
+
+    await expect(apiFetch('/api/test')).rejects.toThrow('Unauthorized');
+    expect(localStorage.removeItem).toHaveBeenCalledWith('auth_token');
+    expect(window.location.href).toMatch(/\/$/);
+
+  });
+
   it('throws ApiError with detail on error response', async () => {
     const { fetch } = setup({ token: 'token' });
     fetch.mockResolvedValue({
