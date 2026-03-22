@@ -18,7 +18,6 @@ const CARD_MIN_WIDTH = 160;
 const CARD_GAP = 16;
 const CARD_HEIGHT = 525; // Approximate height of a card
 
-// the media grid
 export function MediaGrid({
   items,
   serverName,
