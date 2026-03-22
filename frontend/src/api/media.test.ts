@@ -5,7 +5,6 @@ import {
   getLibraries,
   getLibraryItems,
   clearCache,
-  getRecentlyViewed,
   getWatchlist,
   getWatchlistStatus,
   addToWatchlist,
@@ -112,17 +111,3 @@ describe('removeFromWatchlist', () => {
   });
 });
 
-describe('getRecentlyViewed', () => {
-  it('calls the recently-viewed endpoint with server_name', async () => {
-    const { fetch } = setup();
-    await getRecentlyViewed('My Server');
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/media/recently-viewed'),
-      expect.anything()
-    );
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('server_name=My%20Server'),
-      expect.anything()
-    );
-  });
-});

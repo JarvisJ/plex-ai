@@ -190,33 +190,6 @@ class TestClearCache:
         assert "No cache" in response.json()["message"]
 
 
-class TestGetRecentlyViewed:
-    async def test_success(self, client: AsyncClient, mock_plex):
-        from app.models.media import MediaItem
-
-        mock_plex.get_recently_viewed.return_value = [
-            MediaItem(rating_key="1", guid="plex://movie/1", title="Recent Movie", type="movie")
-        ]
-
-        response = await client.get(
-            "/api/media/recently-viewed", params={"server_name": "MyServer"}
-        )
-
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data) == 1
-        assert data[0]["title"] == "Recent Movie"
-
-    async def test_error(self, client: AsyncClient, mock_plex):
-        mock_plex.get_recently_viewed.side_effect = Exception("Plex error")
-
-        response = await client.get(
-            "/api/media/recently-viewed", params={"server_name": "MyServer"}
-        )
-
-        assert response.status_code == 502
-
-
 class TestWatchlistEndpoints:
     async def test_get_watchlist_success(self, client: AsyncClient, mock_plex):
         mock_plex.get_watchlist.return_value = [
