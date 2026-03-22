@@ -55,6 +55,10 @@ export async function apiFetch<T>(
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      clearAuthToken();
+      window.location.href = '/';
+    }
     const errorData = await response.json().catch(() => ({}));
     throw new ApiError(
       response.status,

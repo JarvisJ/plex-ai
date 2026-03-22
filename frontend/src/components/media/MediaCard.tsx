@@ -18,23 +18,39 @@ const PERCENT_FORMATTER = new Intl.NumberFormat("en-US", {
   style: "percent",
 });
 
-export function MediaCard({ item, serverName, clientIdentifier }: MediaCardProps) {
+export function MediaCard({
+  item,
+  serverName,
+  clientIdentifier,
+}: MediaCardProps) {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { isOnWatchlist } = useWatchlist();
   const onWatchlist = isOnWatchlist(item.guid);
   const [cardRef, isVisible] = useIntersectionObserver<HTMLDivElement>({
-    rootMargin: '200px',
+    rootMargin: "200px",
     triggerOnce: true,
   });
 
   // Only compute thumbnail URL when visible
   const thumbUrl =
-    isVisible && item.thumb && serverName ? getThumbnailUrl(serverName, item.thumb) : null;
-  const { src: cachedThumbUrl, isLoading: isThumbLoading } = useCachedThumbnail(thumbUrl);
+    isVisible && item.thumb && serverName
+      ? getThumbnailUrl(serverName, item.thumb)
+      : null;
+  const { src: cachedThumbUrl, isLoading: isThumbLoading } =
+    useCachedThumbnail(thumbUrl);
   const rating = item.rating
     ? PERCENT_FORMATTER.format(item.rating / 10)
     : "0%";
+
+  const recentlyViewedLabel = (() => {
+    if (!item.last_viewed_at) return null;
+    const diffMs = Date.now() - new Date(item.last_viewed_at).getTime();
+    const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+    if (diffMs >= 3 * 30 * 24 * 60 * 60 * 1000) return null;
+    if (diffDays < 1) return "Seen today";
+    return `Seen ${diffDays} day${diffDays > 1 ? "s" : ""}  ago`;
+  })();
 
   const handleWatchlistClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -83,7 +99,7 @@ export function MediaCard({ item, serverName, clientIdentifier }: MediaCardProps
 
         <button
           onClick={handleWatchlistClick}
-          className={`${styles.watchlistButton} ${onWatchlist ? styles.onWatchlist : ''}`}
+          className={`${styles.watchlistButton} ${onWatchlist ? styles.onWatchlist : ""}`}
           title={onWatchlist ? "On watchlist" : "Add to watchlist"}
         >
           {onWatchlist ? (
@@ -121,6 +137,9 @@ export function MediaCard({ item, serverName, clientIdentifier }: MediaCardProps
           )}
         </button>
 
+        {recentlyViewedLabel && (
+          <div className={styles.recentBanner}>{recentlyViewedLabel}</div>
+        )}
         {item.rating != null && <div className={styles.rating}>{rating}</div>}
       </div>
 
@@ -157,10 +176,7 @@ export function MediaCard({ item, serverName, clientIdentifier }: MediaCardProps
           </a>
         )}
         {serverName && (
-          <button
-            onClick={handleAskPlexy}
-            className={styles.askPlexyButton}
-          >
+          <button onClick={handleAskPlexy} className={styles.askPlexyButton}>
             Ask Plexy
           </button>
         )}

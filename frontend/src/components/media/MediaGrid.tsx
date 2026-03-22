@@ -16,7 +16,7 @@ interface MediaGridProps {
 
 const CARD_MIN_WIDTH = 160;
 const CARD_GAP = 16;
-const CARD_HEIGHT = 490; // Approximate height of a card
+const CARD_HEIGHT = 525; // Approximate height of a card
 
 export function MediaGrid({
   items,
@@ -31,7 +31,7 @@ export function MediaGrid({
   const updateColumns = (width: number) => {
     const cols = Math.max(
       1,
-      Math.floor((width + CARD_GAP) / (CARD_MIN_WIDTH + CARD_GAP))
+      Math.floor((width + CARD_GAP) / (CARD_MIN_WIDTH + CARD_GAP)),
     );
     setColumns(cols);
   };
@@ -44,7 +44,7 @@ export function MediaGrid({
           updateColumns(entry.contentRect.width);
         }
       }),
-    []
+    [],
   );
 
   const resizeRef = useCallback(
@@ -57,7 +57,7 @@ export function MediaGrid({
         observer.observe(node);
       }
     },
-    [observer]
+    [observer],
   );
 
   // Calculate number of columns based on container width
