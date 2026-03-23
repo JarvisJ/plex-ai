@@ -74,6 +74,7 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
         headers=headers,
     )
 
+
 # Include routers
 app.include_router(agent_router)
 app.include_router(auth_router)

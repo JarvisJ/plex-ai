@@ -1,7 +1,7 @@
 """Tests for app/services/conversation_store.py."""
 
 import json
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
@@ -155,11 +155,13 @@ class TestConversationStore:
         assert mock_redis.pipeline.call_count >= 2
 
     def test_load_messages(self, store, mock_redis):
-        serialized = json.dumps([
-            {"type": "system", "content": "system"},
-            {"type": "human", "content": "hello"},
-            {"type": "ai", "content": "hi"},
-        ])
+        serialized = json.dumps(
+            [
+                {"type": "system", "content": "system"},
+                {"type": "human", "content": "hello"},
+                {"type": "ai", "content": "hi"},
+            ]
+        )
         mock_redis.hget.return_value = serialized
 
         result = store.load_messages(123, "conv-1")
@@ -217,13 +219,15 @@ class TestConversationStore:
         assert result is False
 
     def test_get_display_messages(self, store, mock_redis):
-        serialized = json.dumps([
-            {"type": "system", "content": "system prompt"},
-            {"type": "human", "content": "hello"},
-            {"type": "ai", "content": ""},  # Empty AI (tool call)
-            {"type": "tool", "content": "result", "tool_call_id": "tc1"},
-            {"type": "ai", "content": "Here are your movies"},
-        ])
+        serialized = json.dumps(
+            [
+                {"type": "system", "content": "system prompt"},
+                {"type": "human", "content": "hello"},
+                {"type": "ai", "content": ""},  # Empty AI (tool call)
+                {"type": "tool", "content": "result", "tool_call_id": "tc1"},
+                {"type": "ai", "content": "Here are your movies"},
+            ]
+        )
         mock_redis.hgetall.return_value = {
             "title": "hello",
             "created_at": "1000.0",

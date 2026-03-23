@@ -13,7 +13,9 @@ import styles from "./AppLayout.module.css";
 export function AppLayout() {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
+  const [openPathname, setOpenPathname] = useState<string | null>(null);
+  const menuOpen = openPathname === location.pathname;
 
   const { data: servers } = useServers();
   const firstServer = servers?.[0] ?? null;
@@ -33,15 +35,9 @@ export function AppLayout() {
       navigate("/");
     }
   }, [isAuthenticated, navigate]);
-
-  const location = useLocation();
   const pathParts = location.pathname.split("/");
   const currentLibraryKey =
     pathParts[1] === "movies" || pathParts[1] === "shows" ? pathParts[2] : null;
-
-  useEffect(() => {
-    setMenuOpen(false);
-  }, [location.pathname]);
 
   const movieLibraries = libraries?.filter((lib) => lib.type === "movie") || [];
   const showLibraries = libraries?.filter((lib) => lib.type === "show") || [];
@@ -53,14 +49,14 @@ export function AppLayout() {
     )}&machine=${encodeURIComponent(clientIdentifier!)}`;
   };
 
-  const closeMenu = () => setMenuOpen(false);
+  const closeMenu = () => setOpenPathname(null);
 
   return (
     <div className={styles.layout}>
       <div className={styles.mobileHeader}>
         <button
           className={styles.hamburgerButton}
-          onClick={() => setMenuOpen((prev) => !prev)}
+          onClick={() => setOpenPathname((prev) => prev === location.pathname ? null : location.pathname)}
           aria-label="Toggle menu"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

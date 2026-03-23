@@ -43,11 +43,13 @@ def _make_mock_client(**method_responses):
 
 class TestCreatePin:
     async def test_returns_pin_data(self, auth_service):
-        resp = _make_mock_response({
-            "id": 12345,
-            "code": "ABCD",
-            "expiresAt": "2025-01-01T00:00:00Z",
-        })
+        resp = _make_mock_response(
+            {
+                "id": 12345,
+                "code": "ABCD",
+                "expiresAt": "2025-01-01T00:00:00Z",
+            }
+        )
         mock_client = _make_mock_client(post=resp)
 
         with patch("app.services.plex_auth.httpx.AsyncClient", return_value=mock_client):
@@ -61,11 +63,13 @@ class TestCreatePin:
 
 class TestCheckPin:
     async def test_token_present(self, auth_service):
-        resp = _make_mock_response({
-            "id": 12345,
-            "code": "ABCD",
-            "authToken": "plex-token-123",
-        })
+        resp = _make_mock_response(
+            {
+                "id": 12345,
+                "code": "ABCD",
+                "authToken": "plex-token-123",
+            }
+        )
         mock_client = _make_mock_client(get=resp)
 
         with patch("app.services.plex_auth.httpx.AsyncClient", return_value=mock_client):
@@ -75,11 +79,13 @@ class TestCheckPin:
         assert result["auth_token"] == "plex-token-123"
 
     async def test_token_absent(self, auth_service):
-        resp = _make_mock_response({
-            "id": 12345,
-            "code": "ABCD",
-            "authToken": None,
-        })
+        resp = _make_mock_response(
+            {
+                "id": 12345,
+                "code": "ABCD",
+                "authToken": None,
+            }
+        )
         mock_client = _make_mock_client(get=resp)
 
         with patch("app.services.plex_auth.httpx.AsyncClient", return_value=mock_client):
@@ -90,12 +96,14 @@ class TestCheckPin:
 
 class TestGetUserInfo:
     async def test_returns_user_dict(self, auth_service):
-        resp = _make_mock_response({
-            "id": 99,
-            "username": "testuser",
-            "email": "test@example.com",
-            "thumb": "https://plex.tv/thumb.jpg",
-        })
+        resp = _make_mock_response(
+            {
+                "id": 99,
+                "username": "testuser",
+                "email": "test@example.com",
+                "thumb": "https://plex.tv/thumb.jpg",
+            }
+        )
         mock_client = _make_mock_client(get=resp)
 
         with patch("app.services.plex_auth.httpx.AsyncClient", return_value=mock_client):
@@ -108,10 +116,12 @@ class TestGetUserInfo:
 
 class TestGetOwnedServerIdentifier:
     async def test_found_owned_server(self, auth_service):
-        resp = _make_mock_response([
-            {"product": "Plex Media Server", "owned": True, "clientIdentifier": "server-id-1"},
-            {"product": "Plex Web", "owned": True, "clientIdentifier": "web-id"},
-        ])
+        resp = _make_mock_response(
+            [
+                {"product": "Plex Media Server", "owned": True, "clientIdentifier": "server-id-1"},
+                {"product": "Plex Web", "owned": True, "clientIdentifier": "web-id"},
+            ]
+        )
         mock_client = _make_mock_client(get=resp)
 
         with patch("app.services.plex_auth.httpx.AsyncClient", return_value=mock_client):
@@ -120,9 +130,11 @@ class TestGetOwnedServerIdentifier:
         assert result == "server-id-1"
 
     async def test_no_owned_server(self, auth_service):
-        resp = _make_mock_response([
-            {"product": "Plex Web", "owned": True, "clientIdentifier": "web-id"},
-        ])
+        resp = _make_mock_response(
+            [
+                {"product": "Plex Web", "owned": True, "clientIdentifier": "web-id"},
+            ]
+        )
         mock_client = _make_mock_client(get=resp)
 
         with patch("app.services.plex_auth.httpx.AsyncClient", return_value=mock_client):

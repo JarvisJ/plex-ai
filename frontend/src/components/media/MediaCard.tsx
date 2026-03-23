@@ -17,6 +17,7 @@ interface MediaCardProps {
 const PERCENT_FORMATTER = new Intl.NumberFormat("en-US", {
   style: "percent",
 });
+const NOW = Date.now();
 
 export function MediaCard({
   item,
@@ -45,7 +46,7 @@ export function MediaCard({
 
   const recentlyViewedLabel = (() => {
     if (!item.last_viewed_at) return null;
-    const diffMs = Date.now() - new Date(item.last_viewed_at).getTime();
+    const diffMs = NOW - new Date(item.last_viewed_at).getTime();
     const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
     if (diffMs >= 3 * 30 * 24 * 60 * 60 * 1000) return null;
     if (diffDays < 1) return "Seen today";

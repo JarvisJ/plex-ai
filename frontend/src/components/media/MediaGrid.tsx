@@ -63,11 +63,12 @@ export function MediaGrid({
   // Calculate number of columns based on container width
   useEffect(() => {
     return () => observer.disconnect();
-  }, []);
+  }, [observer]);
 
   // Calculate rows
   const rowCount = Math.ceil(items.length / columns);
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: rowCount + (hasMore ? 1 : 0), // +1 for load more button
     getScrollElement: () => element.current,

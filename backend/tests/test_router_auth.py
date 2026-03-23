@@ -1,14 +1,13 @@
 """Tests for app/routers/auth.py."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from httpx import AsyncClient
 
+from app.dependencies import get_current_user_token, get_plex_token
 from app.main import app
 from app.routers.auth import get_plex_auth_service
-from app.dependencies import get_current_user_token, get_plex_token
-from tests.conftest import auth_header
 
 
 @pytest.fixture
@@ -82,9 +81,7 @@ class TestExchangeToken:
         }
         mock_auth_service.create_session_token.return_value = "jwt-token"
 
-        response = await client.post(
-            "/api/auth/token", params={"pin_id": 123, "code": "ABCD"}
-        )
+        response = await client.post("/api/auth/token", params={"pin_id": 123, "code": "ABCD"})
 
         assert response.status_code == 200
         assert response.json()["access_token"] == "jwt-token"
@@ -92,9 +89,7 @@ class TestExchangeToken:
     async def test_pin_not_authenticated(self, client: AsyncClient, mock_auth_service):
         mock_auth_service.check_pin.return_value = None
 
-        response = await client.post(
-            "/api/auth/token", params={"pin_id": 123, "code": "ABCD"}
-        )
+        response = await client.post("/api/auth/token", params={"pin_id": 123, "code": "ABCD"})
 
         assert response.status_code == 400
 

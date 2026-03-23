@@ -48,11 +48,13 @@ class TestChatEndpoint:
     async def test_success_streaming(self, client: AsyncClient):
         with patch("app.routers.agent.PlexAgentService") as mock_agent_cls:
             mock_agent = MagicMock()
-            mock_agent.chat_stream.return_value = iter([
-                'data: {"type": "conversation_id", "conversation_id": "abc"}\n\n',
-                'data: {"type": "content", "content": "Hello!"}\n\n',
-                'data: {"type": "done"}\n\n',
-            ])
+            mock_agent.chat_stream.return_value = iter(
+                [
+                    'data: {"type": "conversation_id", "conversation_id": "abc"}\n\n',
+                    'data: {"type": "content", "content": "Hello!"}\n\n',
+                    'data: {"type": "done"}\n\n',
+                ]
+            )
             mock_agent_cls.return_value = mock_agent
 
             response = await client.post(

@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { MediaItem } from '../api/media';
 
 let mockItems: MediaItem[] = [];
-let mockIsOnWatchlist = (_guid: string) => false;
+const mockIsOnWatchlist = () => false;
 
 vi.mock('../hooks/useMediaItems', () => ({
   useLibraryItems: () => ({

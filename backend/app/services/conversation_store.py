@@ -124,21 +124,15 @@ class ConversationStore:
         count = self._redis.zcard(index_key)
         if count and count > MAX_CONVERSATIONS_PER_USER:
             # Remove oldest conversations
-            to_remove = self._redis.zrange(
-                index_key, 0, count - MAX_CONVERSATIONS_PER_USER - 1
-            )
+            to_remove = self._redis.zrange(index_key, 0, count - MAX_CONVERSATIONS_PER_USER - 1)
             if to_remove:
                 pipe = self._redis.pipeline()
                 for old_id in to_remove:
                     pipe.delete(self._conv_key(user_id, old_id))
-                pipe.zremrangebyrank(
-                    index_key, 0, count - MAX_CONVERSATIONS_PER_USER - 1
-                )
+                pipe.zremrangebyrank(index_key, 0, count - MAX_CONVERSATIONS_PER_USER - 1)
                 pipe.execute()
 
-    def load_messages(
-        self, user_id: int, conversation_id: str
-    ) -> list[BaseMessage] | None:
+    def load_messages(self, user_id: int, conversation_id: str) -> list[BaseMessage] | None:
         """Load conversation messages from Redis."""
         conv_key = self._conv_key(user_id, conversation_id)
         raw = self._redis.hget(conv_key, "messages")
@@ -147,9 +141,7 @@ class ConversationStore:
         data = json.loads(raw)
         return [_deserialize_message(d) for d in data]
 
-    def list_conversations(
-        self, user_id: int, limit: int = 20
-    ) -> list[ConversationSummary]:
+    def list_conversations(self, user_id: int, limit: int = 20) -> list[ConversationSummary]:
         """List conversations for a user, newest first."""
         index_key = self._index_key(user_id)
         # Get newest first
@@ -184,9 +176,7 @@ class ConversationStore:
         results = pipe.execute()
         return results[0] > 0
 
-    def get_display_messages(
-        self, user_id: int, conversation_id: str
-    ) -> ConversationHistory | None:
+    def get_display_messages(self, user_id: int, conversation_id: str) -> ConversationHistory | None:
         """Load conversation and filter to user/assistant messages only."""
         conv_key = self._conv_key(user_id, conversation_id)
         data = self._redis.hgetall(conv_key)
@@ -206,9 +196,7 @@ class ConversationStore:
                 if not content:
                     continue
                 role = "user" if msg_type == "human" else "assistant"
-                display_messages.append(
-                    AgentMessage(role=role, content=content, media_items=[])
-                )
+                display_messages.append(AgentMessage(role=role, content=content, media_items=[]))
 
         return ConversationHistory(
             conversation_id=conversation_id,

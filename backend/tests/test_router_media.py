@@ -1,6 +1,6 @@
 """Tests for app/routers/media.py."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from httpx import AsyncClient
@@ -71,13 +71,9 @@ class TestGetServers:
 
 class TestGetLibraries:
     async def test_success(self, client: AsyncClient, mock_plex):
-        mock_plex.get_libraries.return_value = [
-            Library(key="1", title="Movies", type="movie")
-        ]
+        mock_plex.get_libraries.return_value = [Library(key="1", title="Movies", type="movie")]
 
-        response = await client.get(
-            "/api/media/libraries", params={"server_name": "MyServer"}
-        )
+        response = await client.get("/api/media/libraries", params={"server_name": "MyServer"})
 
         assert response.status_code == 200
         assert response.json()[0]["title"] == "Movies"
@@ -85,9 +81,7 @@ class TestGetLibraries:
     async def test_error(self, client: AsyncClient, mock_plex):
         mock_plex.get_libraries.side_effect = Exception("Server error")
 
-        response = await client.get(
-            "/api/media/libraries", params={"server_name": "MyServer"}
-        )
+        response = await client.get("/api/media/libraries", params={"server_name": "MyServer"})
 
         assert response.status_code == 502
 
@@ -143,7 +137,9 @@ class TestGetThumbnail:
             content = b"fetched-image"
             headers = {"content-type": "image/jpeg"}
             status_code = 200
-            def raise_for_status(self): pass
+
+            def raise_for_status(self):
+                pass
 
         mock_http_client = AsyncMock()
         mock_http_client.get.return_value = FakeResponse()
@@ -192,9 +188,7 @@ class TestClearCache:
 
 class TestWatchlistEndpoints:
     async def test_get_watchlist_success(self, client: AsyncClient, mock_plex):
-        mock_plex.get_watchlist.return_value = [
-            WatchlistItem(guid="plex://movie/1", title="Test", type="movie")
-        ]
+        mock_plex.get_watchlist.return_value = [WatchlistItem(guid="plex://movie/1", title="Test", type="movie")]
 
         response = await client.get("/api/media/watchlist")
 
@@ -209,9 +203,7 @@ class TestWatchlistEndpoints:
         assert response.status_code == 502
 
     async def test_get_watchlist_status_success(self, client: AsyncClient, mock_plex):
-        mock_plex.get_watchlist_status.return_value = WatchlistStatus(
-            rating_key="1", title="Test", on_watchlist=True
-        )
+        mock_plex.get_watchlist_status.return_value = WatchlistStatus(rating_key="1", title="Test", on_watchlist=True)
 
         response = await client.get(
             "/api/media/watchlist/status",
@@ -222,9 +214,7 @@ class TestWatchlistEndpoints:
         assert response.json()["on_watchlist"] is True
 
     async def test_add_to_watchlist_success(self, client: AsyncClient, mock_plex):
-        mock_plex.add_to_watchlist.return_value = WatchlistStatus(
-            rating_key="1", title="Test", on_watchlist=True
-        )
+        mock_plex.add_to_watchlist.return_value = WatchlistStatus(rating_key="1", title="Test", on_watchlist=True)
 
         response = await client.post(
             "/api/media/watchlist",
@@ -245,9 +235,7 @@ class TestWatchlistEndpoints:
         assert response.status_code == 502
 
     async def test_remove_from_watchlist_success(self, client: AsyncClient, mock_plex):
-        mock_plex.remove_from_watchlist.return_value = WatchlistStatus(
-            rating_key="1", title="Test", on_watchlist=False
-        )
+        mock_plex.remove_from_watchlist.return_value = WatchlistStatus(rating_key="1", title="Test", on_watchlist=False)
 
         response = await client.delete(
             "/api/media/watchlist",

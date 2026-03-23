@@ -1,8 +1,5 @@
 """Tests for app/main.py — health, hello, CORS, error handling."""
 
-from unittest.mock import patch
-
-import pytest
 from httpx import AsyncClient
 
 

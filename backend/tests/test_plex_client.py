@@ -1,11 +1,10 @@
 from datetime import UTC, datetime
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from app.config import Settings
-from app.models.media import MediaItem, PaginatedResponse, Server, WatchlistItem, WatchlistStatus
-from app.services.cache import CacheService
+from app.models.media import MediaItem, PaginatedResponse, WatchlistStatus
 from app.services.plex_client import PlexClientService
 
 
@@ -82,7 +81,7 @@ class TestAccountProperty:
         client._account = None
         with patch("app.services.plex_client.MyPlexAccount") as mock_account_cls:
             mock_account_cls.return_value = MagicMock(id=42)
-            acc = client.account
+            client.account
             mock_account_cls.assert_called_once_with(token="test-token", timeout=60)
 
     def test_reuse(self, plex_client):
@@ -93,9 +92,22 @@ class TestAccountProperty:
 
 class TestGetServers:
     def test_cache_hit(self, plex_client, mock_cache, mock_redis):
-        mock_redis.get.return_value = '[{"name":"srv","address":"1.2.3.4","port":32400,"scheme":"https","local":false,"owned":true,"client_identifier":"cid"}]'
+        mock_redis.get.return_value = (
+            '[{"name":"srv","address":"1.2.3.4","port":32400,"scheme":"https",'
+            '"local":false,"owned":true,"client_identifier":"cid"}]'
+        )
         result = plex_client.get_servers()
-        assert result == [{"name": "srv", "address": "1.2.3.4", "port": 32400, "scheme": "https", "local": False, "owned": True, "client_identifier": "cid"}]
+        assert result == [
+            {
+                "name": "srv",
+                "address": "1.2.3.4",
+                "port": 32400,
+                "scheme": "https",
+                "local": False,
+                "owned": True,
+                "client_identifier": "cid",
+            }
+        ]
 
     def test_cache_miss_filters_local(self, plex_client, mock_cache, mock_redis):
         mock_redis.get.return_value = None
@@ -138,9 +150,15 @@ class TestGetLibraries:
         mock_redis.get.return_value = None
 
         mock_server = MagicMock()
-        movie_section = MagicMock(key=1, title="Movies", type="movie", agent="agent", scanner="scanner", thumb="/thumb", totalSize=100)
-        show_section = MagicMock(key=2, title="TV", type="show", agent="agent", scanner="scanner", thumb=None, totalSize=50)
-        music_section = MagicMock(key=3, title="Music", type="artist", agent="agent", scanner="scanner", thumb=None, totalSize=200)
+        movie_section = MagicMock(
+            key=1, title="Movies", type="movie", agent="agent", scanner="scanner", thumb="/thumb", totalSize=100
+        )
+        show_section = MagicMock(
+            key=2, title="TV", type="show", agent="agent", scanner="scanner", thumb=None, totalSize=50
+        )
+        music_section = MagicMock(
+            key=3, title="Music", type="artist", agent="agent", scanner="scanner", thumb=None, totalSize=200
+        )
         mock_server.library.sections.return_value = [movie_section, show_section, music_section]
 
         with patch.object(plex_client, "_connect_to_server", return_value=mock_server):

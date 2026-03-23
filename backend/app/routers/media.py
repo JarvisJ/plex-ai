@@ -66,9 +66,7 @@ async def get_library_items(
 ) -> PaginatedResponse:
     """Get paginated items from a library."""
     try:
-        return await asyncio.to_thread(
-            plex_client.get_library_items, server_name, library_key, offset, limit
-        )
+        return await asyncio.to_thread(plex_client.get_library_items, server_name, library_key, offset, limit)
     except Exception as e:
         logger.exception("Failed to get library items")
         raise HTTPException(
@@ -108,9 +106,7 @@ async def get_thumbnail(
 
     try:
         async with _thumbnail_semaphore:
-            thumbnail_url = await asyncio.to_thread(
-                plex_client.get_thumbnail_url, server_name, path
-            )
+            thumbnail_url = await asyncio.to_thread(plex_client.get_thumbnail_url, server_name, path)
             http_client = request.app.state.http_client
             response = await http_client.get(thumbnail_url, timeout=30)
             response.raise_for_status()
@@ -169,9 +165,7 @@ async def get_watchlist_status(
 ) -> WatchlistStatus:
     """Check if an item is on the user's watchlist."""
     try:
-        return await asyncio.to_thread(
-            plex_client.get_watchlist_status, server_name, rating_key
-        )
+        return await asyncio.to_thread(plex_client.get_watchlist_status, server_name, rating_key)
     except Exception as e:
         logger.exception("Failed to get watchlist status")
         raise HTTPException(
@@ -188,9 +182,7 @@ async def add_to_watchlist(
 ) -> WatchlistStatus:
     """Add an item to the user's watchlist."""
     try:
-        return await asyncio.to_thread(
-            plex_client.add_to_watchlist, server_name, rating_key
-        )
+        return await asyncio.to_thread(plex_client.add_to_watchlist, server_name, rating_key)
     except Exception as e:
         logger.exception("Failed to add to watchlist")
         raise HTTPException(
@@ -207,9 +199,7 @@ async def remove_from_watchlist(
 ) -> WatchlistStatus:
     """Remove an item from the user's watchlist."""
     try:
-        return await asyncio.to_thread(
-            plex_client.remove_from_watchlist, server_name, rating_key
-        )
+        return await asyncio.to_thread(plex_client.remove_from_watchlist, server_name, rating_key)
     except Exception as e:
         logger.exception("Failed to remove from watchlist")
         raise HTTPException(
