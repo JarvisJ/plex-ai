@@ -1,12 +1,18 @@
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import jwt
 import pytest
+from dotenv import load_dotenv
 from httpx import ASGITransport, AsyncClient
 
-from app.config import Settings
-from app.main import app
-from app.services.cache import CacheService
+# Load mock env vars before any app module imports trigger module-level code
+# (e.g. TavilyClient() in app/agents/plex.py requires TAVILY_API_KEY)
+load_dotenv(Path(__file__).parent.parent / ".env.spec", override=True)
+
+from app.config import Settings  # noqa: E402
+from app.main import app  # noqa: E402
+from app.services.cache import CacheService  # noqa: E402
 
 
 @pytest.fixture
