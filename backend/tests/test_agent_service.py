@@ -131,9 +131,7 @@ class TestChat:
 
         # First call: tool call
         tool_call_response = MagicMock(spec=AIMessage)
-        tool_call_response.tool_calls = [
-            {"name": "search_library", "args": {"query": "inception"}, "id": "call_1"}
-        ]
+        tool_call_response.tool_calls = [{"name": "search_library", "args": {"query": "inception"}, "id": "call_1"}]
         tool_call_response.content = ""
 
         # Second call: final response
@@ -161,9 +159,7 @@ class TestChat:
         from langchain_core.messages import AIMessage
 
         tool_call_response = MagicMock(spec=AIMessage)
-        tool_call_response.tool_calls = [
-            {"name": "search_library", "args": {}, "id": "call_1"}
-        ]
+        tool_call_response.tool_calls = [{"name": "search_library", "args": {}, "id": "call_1"}]
         tool_call_response.content = ""
 
         final_response = MagicMock(spec=AIMessage)
@@ -192,9 +188,7 @@ class TestChat:
         from langchain_core.messages import AIMessage
 
         tool_call_response = MagicMock(spec=AIMessage)
-        tool_call_response.tool_calls = [
-            {"name": "get_media_details", "args": {"title": "Inception"}, "id": "call_1"}
-        ]
+        tool_call_response.tool_calls = [{"name": "get_media_details", "args": {"title": "Inception"}, "id": "call_1"}]
         tool_call_response.content = ""
 
         final_response = MagicMock(spec=AIMessage)
@@ -208,7 +202,10 @@ class TestChat:
         mock_tool = MagicMock()
         mock_tool.name = "get_media_details"
         mock_tool.invoke.return_value = {
-            "rating_key": "1", "guid": "plex://movie/1", "title": "Inception", "type": "movie"
+            "rating_key": "1",
+            "guid": "plex://movie/1",
+            "title": "Inception",
+            "type": "movie",
         }
 
         with patch("app.services.agent_service.create_plex_tools", return_value=[mock_tool]):
@@ -221,9 +218,7 @@ class TestChat:
 
         # Create response that always has tool calls (to test max iterations)
         tool_response = MagicMock(spec=AIMessage)
-        tool_response.tool_calls = [
-            {"name": "search_library", "args": {}, "id": "call_1"}
-        ]
+        tool_response.tool_calls = [{"name": "search_library", "args": {}, "id": "call_1"}]
         tool_response.content = "Max iterations reached"
 
         mock_llm = MagicMock()
@@ -282,9 +277,7 @@ class TestChatStream:
         from langchain_core.messages import AIMessage
 
         tool_call_response = MagicMock(spec=AIMessage)
-        tool_call_response.tool_calls = [
-            {"name": "search_library", "args": {}, "id": "call_1"}
-        ]
+        tool_call_response.tool_calls = [{"name": "search_library", "args": {}, "id": "call_1"}]
         tool_call_response.content = ""
 
         no_tool_response = MagicMock(spec=AIMessage)
@@ -321,9 +314,7 @@ class TestChatStream:
         from langchain_core.messages import AIMessage
 
         tool_call_response = MagicMock(spec=AIMessage)
-        tool_call_response.tool_calls = [
-            {"name": "search_library", "args": {}, "id": "call_1"}
-        ]
+        tool_call_response.tool_calls = [{"name": "search_library", "args": {}, "id": "call_1"}]
         tool_call_response.content = ""
 
         no_tool_response = MagicMock(spec=AIMessage)

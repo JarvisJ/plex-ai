@@ -1,6 +1,5 @@
 """Tests for app/main.py — health, hello, CORS, error handling."""
 
-
 from httpx import AsyncClient
 
 

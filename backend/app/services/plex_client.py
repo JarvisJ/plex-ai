@@ -115,9 +115,7 @@ class PlexClientService:
     ) -> PaginatedResponse:
         """Get paginated items from a library."""
         user_id = self._get_user_id()
-        cache_key = self.cache._make_key(
-            "library_items", user_id, server_name, library_key, offset, limit
-        )
+        cache_key = self.cache._make_key("library_items", user_id, server_name, library_key, offset, limit)
 
         cached = self.cache.get(cache_key)
         if cached is not None:
@@ -181,9 +179,7 @@ class PlexClientService:
                 duration_ms=item.duration,
                 added_at=self._parse_datetime(item.addedAt),
                 originally_available_at=(
-                    item.originallyAvailableAt.isoformat()
-                    if item.originallyAvailableAt
-                    else None
+                    item.originallyAvailableAt.isoformat() if item.originallyAvailableAt else None
                 ),
                 genres=[g.tag for g in item.genres] if item.genres else [],
                 rating=item.rating,
@@ -204,9 +200,7 @@ class PlexClientService:
                 duration_ms=item.duration,
                 added_at=self._parse_datetime(item.addedAt),
                 originally_available_at=(
-                    item.originallyAvailableAt.isoformat()
-                    if item.originallyAvailableAt
-                    else None
+                    item.originallyAvailableAt.isoformat() if item.originallyAvailableAt else None
                 ),
                 genres=[g.tag for g in item.genres] if item.genres else [],
                 rating=item.rating,
@@ -232,9 +226,7 @@ class PlexClientService:
         # Use the server's token (which works for shared servers) instead of user's plex.tv token
         return f"{server._baseurl}{thumb_path}?X-Plex-Token={server._token}"
 
-    def get_watchlist_status(
-        self, server_name: str, rating_key: str
-    ) -> WatchlistStatus:
+    def get_watchlist_status(self, server_name: str, rating_key: str) -> WatchlistStatus:
         """Check if an item is on the user's watchlist."""
         server = self._connect_to_server(server_name)
         item = server.fetchItem(int(rating_key))
@@ -256,9 +248,7 @@ class PlexClientService:
             on_watchlist=True,
         )
 
-    def remove_from_watchlist(
-        self, server_name: str, rating_key: str
-    ) -> WatchlistStatus:
+    def remove_from_watchlist(self, server_name: str, rating_key: str) -> WatchlistStatus:
         """Remove an item from the user's watchlist."""
         server = self._connect_to_server(server_name)
         item = server.fetchItem(int(rating_key))
@@ -287,15 +277,11 @@ class PlexClientService:
             List of all media items matching the criteria
         """
         user_id = self._get_user_id()
-        cache_key = self.cache._make_key(
-            "all_library_items", user_id, server_name, media_type or "all"
-        )
+        cache_key = self.cache._make_key("all_library_items", user_id, server_name, media_type or "all")
 
         cached = self.cache.get(cache_key)
         if cached is not None:
-            return [
-                MediaItem(**item) if isinstance(item, dict) else item for item in cached
-            ]
+            return [MediaItem(**item) if isinstance(item, dict) else item for item in cached]
 
         server = self._connect_to_server(server_name)
         all_items: list[MediaItem] = []

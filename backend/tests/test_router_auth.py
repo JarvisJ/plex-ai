@@ -81,9 +81,7 @@ class TestExchangeToken:
         }
         mock_auth_service.create_session_token.return_value = "jwt-token"
 
-        response = await client.post(
-            "/api/auth/token", params={"pin_id": 123, "code": "ABCD"}
-        )
+        response = await client.post("/api/auth/token", params={"pin_id": 123, "code": "ABCD"})
 
         assert response.status_code == 200
         assert response.json()["access_token"] == "jwt-token"
@@ -91,9 +89,7 @@ class TestExchangeToken:
     async def test_pin_not_authenticated(self, client: AsyncClient, mock_auth_service):
         mock_auth_service.check_pin.return_value = None
 
-        response = await client.post(
-            "/api/auth/token", params={"pin_id": 123, "code": "ABCD"}
-        )
+        response = await client.post("/api/auth/token", params={"pin_id": 123, "code": "ABCD"})
 
         assert response.status_code == 400
 

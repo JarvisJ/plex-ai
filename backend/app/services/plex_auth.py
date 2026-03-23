@@ -124,10 +124,7 @@ class PlexAuthService:
 
             # Find the first owned Plex Media Server
             for resource in resources:
-                if (
-                    resource.get("product") == "Plex Media Server"
-                    and resource.get("owned")
-                ):
+                if resource.get("product") == "Plex Media Server" and resource.get("owned"):
                     client_id: str | None = resource.get("clientIdentifier")
                     return client_id
 
@@ -144,9 +141,7 @@ class PlexAuthService:
         Returns:
             JWT token string
         """
-        expiration = datetime.now(UTC) + timedelta(
-            hours=self.settings.jwt_expiration_hours
-        )
+        expiration = datetime.now(UTC) + timedelta(hours=self.settings.jwt_expiration_hours)
         payload = {
             "plex_token": plex_token,
             "user_id": user_id,

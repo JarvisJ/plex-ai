@@ -85,6 +85,7 @@ def get_plex_token_flexible(
         )
     return plex_token
 
+
 def get_plex_token(token_payload: dict = Depends(get_current_user_token)) -> str:
     """Extract Plex auth token from JWT payload."""
     plex_token = token_payload.get("plex_token")

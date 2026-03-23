@@ -50,7 +50,7 @@ async def stream_generator(
                 chunk_queue.put(chunk)
         except Exception as e:
             logger.exception("Error in chat stream")
-            chunk_queue.put(f"data: {{\"type\": \"error\", \"error\": \"{e}\"}}\n\n")
+            chunk_queue.put(f'data: {{"type": "error", "error": "{e}"}}\n\n')
         finally:
             chunk_queue.put(None)  # Signal completion
 
@@ -95,9 +95,7 @@ async def chat(
         )
 
         return StreamingResponse(
-            stream_generator(
-                agent_service, chat_request.message, chat_request.conversation_id
-            ),
+            stream_generator(agent_service, chat_request.message, chat_request.conversation_id),
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",

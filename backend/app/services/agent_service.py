@@ -51,9 +51,7 @@ class PlexAgentService:
     """Service for managing the Plex chat agent."""
 
     # In-memory conversation storage (per server)
-    _conversations: dict[
-        str, list[HumanMessage | AIMessage | SystemMessage | ToolMessage]
-    ] = {}
+    _conversations: dict[str, list[HumanMessage | AIMessage | SystemMessage | ToolMessage]] = {}
 
     def __init__(
         self,
@@ -77,9 +75,7 @@ class PlexAgentService:
     def plex_client(self) -> PlexClientService:
         """Lazy-load the PlexClientService instance."""
         if self._plex_client is None:
-            self._plex_client = PlexClientService(
-                self.plex_token, self.settings, self.cache
-            )
+            self._plex_client = PlexClientService(self.plex_token, self.settings, self.cache)
         return self._plex_client
 
     def _get_llm(self) -> ChatOpenAI:
@@ -105,15 +101,11 @@ class PlexAgentService:
             # Try loading from Redis
             loaded = None
             if self.conversation_store and self.user_id is not None:
-                loaded = self.conversation_store.load_messages(
-                    self.user_id, conversation_id
-                )
+                loaded = self.conversation_store.load_messages(self.user_id, conversation_id)
             if loaded:
                 self._conversations[conversation_id] = loaded
             else:
-                self._conversations[conversation_id] = [
-                    SystemMessage(content=SYSTEM_PROMPT)
-                ]
+                self._conversations[conversation_id] = [SystemMessage(content=SYSTEM_PROMPT)]
 
         history = self._conversations[conversation_id]
 
@@ -194,19 +186,13 @@ class PlexAgentService:
 
         # Persist to Redis
         if self.conversation_store and self.user_id is not None:
-            self.conversation_store.save_conversation(
-                self.user_id, conversation_id, history
-            )
+            self.conversation_store.save_conversation(self.user_id, conversation_id, history)
 
         # Filter media items to only include those mentioned in the response
         mentioned_items: list[MediaItem] = []
         if collected_media_items and final_response:
             response_lower = final_response.lower()
-            mentioned_items = [
-                item
-                for item in collected_media_items
-                if item.title.lower() in response_lower
-            ]
+            mentioned_items = [item for item in collected_media_items if item.title.lower() in response_lower]
             # Deduplicate by rating_key while preserving order
             seen_keys: set[str] = set()
             unique_items: list[MediaItem] = []
@@ -225,9 +211,7 @@ class PlexAgentService:
             ),
         )
 
-    def chat_stream(
-        self, message: str, conversation_id: str | None = None
-    ) -> Generator[str, None, None]:
+    def chat_stream(self, message: str, conversation_id: str | None = None) -> Generator[str, None, None]:
         """Process a chat message and stream the response as SSE events."""
         # Generate or use existing conversation ID
         if conversation_id is None:
@@ -243,15 +227,11 @@ class PlexAgentService:
             # Try loading from Redis
             loaded = None
             if self.conversation_store and self.user_id is not None:
-                loaded = self.conversation_store.load_messages(
-                    self.user_id, conversation_id
-                )
+                loaded = self.conversation_store.load_messages(self.user_id, conversation_id)
             if loaded:
                 self._conversations[conversation_id] = loaded
             else:
-                self._conversations[conversation_id] = [
-                    SystemMessage(content=SYSTEM_PROMPT)
-                ]
+                self._conversations[conversation_id] = [SystemMessage(content=SYSTEM_PROMPT)]
 
         history = self._conversations[conversation_id]
 
@@ -347,18 +327,12 @@ class PlexAgentService:
 
         # Persist to Redis
         if self.conversation_store and self.user_id is not None:
-            self.conversation_store.save_conversation(
-                self.user_id, conversation_id, history
-            )
+            self.conversation_store.save_conversation(self.user_id, conversation_id, history)
 
         # Filter media items to only include those mentioned in the response
         if collected_media_items and full_response:
             response_lower = full_response.lower()
-            mentioned_items = [
-                item
-                for item in collected_media_items
-                if item.title.lower() in response_lower
-            ]
+            mentioned_items = [item for item in collected_media_items if item.title.lower() in response_lower]
             # Deduplicate by rating_key while preserving order
             seen_keys: set[str] = set()
             unique_items: list[MediaItem] = []
@@ -381,8 +355,6 @@ class PlexAgentService:
             del self._conversations[conversation_id]
             cleared = True
         if self.conversation_store and self.user_id is not None:
-            if self.conversation_store.delete_conversation(
-                self.user_id, conversation_id
-            ):
+            if self.conversation_store.delete_conversation(self.user_id, conversation_id):
                 cleared = True
         return cleared

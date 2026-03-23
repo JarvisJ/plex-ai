@@ -80,17 +80,13 @@ class TestGetTokenFromQueryOrHeader:
     def test_token_from_query(self, settings):
         payload = {"plex_token": "q-tok"}
         token = _make_token(payload)
-        result = get_token_from_query_or_header(
-            authorization=None, token=token, settings=settings
-        )
+        result = get_token_from_query_or_header(authorization=None, token=token, settings=settings)
         assert result["plex_token"] == "q-tok"
 
     def test_token_from_header(self, settings):
         payload = {"plex_token": "h-tok"}
         token = _make_token(payload)
-        result = get_token_from_query_or_header(
-            authorization=f"Bearer {token}", token=None, settings=settings
-        )
+        result = get_token_from_query_or_header(authorization=f"Bearer {token}", token=None, settings=settings)
         assert result["plex_token"] == "h-tok"
 
     def test_query_takes_precedence_over_header(self, settings):
@@ -98,16 +94,12 @@ class TestGetTokenFromQueryOrHeader:
         h_payload = {"plex_token": "header"}
         q_token = _make_token(q_payload)
         h_token = _make_token(h_payload)
-        result = get_token_from_query_or_header(
-            authorization=f"Bearer {h_token}", token=q_token, settings=settings
-        )
+        result = get_token_from_query_or_header(authorization=f"Bearer {h_token}", token=q_token, settings=settings)
         assert result["plex_token"] == "query"
 
     def test_neither_provided(self, settings):
         with pytest.raises(HTTPException) as exc_info:
-            get_token_from_query_or_header(
-                authorization=None, token=None, settings=settings
-            )
+            get_token_from_query_or_header(authorization=None, token=None, settings=settings)
         assert exc_info.value.status_code == 401
         assert "Authentication required" in exc_info.value.detail
 

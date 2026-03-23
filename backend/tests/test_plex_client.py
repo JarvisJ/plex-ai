@@ -98,8 +98,15 @@ class TestGetServers:
         )
         result = plex_client.get_servers()
         assert result == [
-            {"name": "srv", "address": "1.2.3.4", "port": 32400, "scheme": "https",
-             "local": False, "owned": True, "client_identifier": "cid"}
+            {
+                "name": "srv",
+                "address": "1.2.3.4",
+                "port": 32400,
+                "scheme": "https",
+                "local": False,
+                "owned": True,
+                "client_identifier": "cid",
+            }
         ]
 
     def test_cache_miss_filters_local(self, plex_client, mock_cache, mock_redis):
