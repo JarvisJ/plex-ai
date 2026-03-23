@@ -12,6 +12,7 @@ interface LibraryPageProps {
 
 const SEARCH_PROPERTIES: Array<"summary" | "title"> = ["summary", "title"];
 const THREE_MONTHS_MS = 3 * 30 * 24 * 60 * 60 * 1000;
+const NOW = Date.now();
 
 export function LibraryPage({ title }: LibraryPageProps) {
   const { libraryKey } = useParams<{ libraryKey: string }>();
@@ -87,8 +88,7 @@ export function LibraryPage({ title }: LibraryPageProps) {
       ? baseFilteredItems.filter((item) => isOnWatchlist(item.guid))
       : baseFilteredItems;
 
-    const now = Date.now();
-    const cutoff = now - THREE_MONTHS_MS;
+    const cutoff = NOW - THREE_MONTHS_MS;
 
     return [...result].sort((a, b) => {
       const aTime = a.last_viewed_at ? new Date(a.last_viewed_at).getTime() : null;

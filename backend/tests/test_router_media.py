@@ -1,6 +1,6 @@
 """Tests for app/routers/media.py."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from httpx import AsyncClient

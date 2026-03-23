@@ -40,7 +40,7 @@ describe('useIntersectionObserver', () => {
     });
 
     // Re-render to trigger useEffect
-    const { result: result2 } = renderHook(() => useIntersectionObserver<HTMLDivElement>());
+    renderHook(() => useIntersectionObserver<HTMLDivElement>());
     // Observer should be constructable - basic verification
     expect(result.current[1]).toBe(false); // still false until callback fires
   });

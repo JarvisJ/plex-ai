@@ -1,14 +1,13 @@
 """Tests for app/routers/auth.py."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from httpx import AsyncClient
 
+from app.dependencies import get_current_user_token, get_plex_token
 from app.main import app
 from app.routers.auth import get_plex_auth_service
-from app.dependencies import get_current_user_token, get_plex_token
-from tests.conftest import auth_header
 
 
 @pytest.fixture

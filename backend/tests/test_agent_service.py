@@ -6,8 +6,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.config import Settings
-from app.models.agent import AgentMessage, ChatResponse
-from app.models.media import MediaItem
 from app.services.agent_service import PlexAgentService
 
 
@@ -38,7 +36,7 @@ class TestPlexClientProperty:
         assert agent_service._plex_client is None
         with patch("app.services.agent_service.PlexClientService") as mock_cls:
             mock_cls.return_value = MagicMock()
-            client = agent_service.plex_client
+            agent_service.plex_client
             mock_cls.assert_called_once()
 
     def test_reuse(self, agent_service):
@@ -52,7 +50,7 @@ class TestGetLLM:
         assert agent_service._llm is None
         with patch("app.services.agent_service.ChatOpenAI") as mock_cls:
             mock_cls.return_value = MagicMock()
-            llm = agent_service._get_llm()
+            agent_service._get_llm()
             mock_cls.assert_called_once()
 
     def test_reuse(self, agent_service):
@@ -237,7 +235,7 @@ class TestChat:
         mock_tool.invoke.return_value = []
 
         with patch("app.services.agent_service.create_plex_tools", return_value=[mock_tool]):
-            result = agent_service.chat("Loop forever")
+            agent_service.chat("Loop forever")
 
         # Should stop after 5 iterations
         assert mock_llm.bind_tools.return_value.invoke.call_count == 5

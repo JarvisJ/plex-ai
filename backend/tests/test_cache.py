@@ -1,7 +1,6 @@
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
-import pytest
 from pydantic import BaseModel
 
 from app.services.cache import CacheService, _serialize_value, get_cache_service

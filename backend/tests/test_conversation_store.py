@@ -1,7 +1,7 @@
 """Tests for app/services/conversation_store.py."""
 
 import json
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage

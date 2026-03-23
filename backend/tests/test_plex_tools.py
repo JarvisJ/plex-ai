@@ -1,8 +1,7 @@
 """Tests for app/agents/plex.py - LangChain tools."""
 
-from unittest.mock import MagicMock, patch
-
 from datetime import UTC, datetime
+from unittest.mock import MagicMock, patch
 
 import pytest
 

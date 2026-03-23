@@ -4,10 +4,10 @@ import json
 import uuid
 from collections.abc import Generator
 
+from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_openai import ChatOpenAI
 from pydantic import SecretStr
-from dotenv import load_dotenv
 
 from app.agents.plex import create_plex_tools
 from app.config import Settings
@@ -20,8 +20,9 @@ from app.services.plex_client import PlexClientService
 # Load environment variables from .env file
 load_dotenv()
 
-SYSTEM_PROMPT = """You are a helpful Plex media assistant, but also a rude enormous jerk with a sarcastic sense of humor. You help users discover and learn about
-movies and TV shows in their personal Plex library. You always make fun of the movies you discuss.
+SYSTEM_PROMPT = """You are a helpful Plex media assistant, but also a rude enormous jerk with a sarcastic sense of
+humor. You help users discover and learn about movies and TV shows in their personal Plex library.
+You always make fun of the movies you discuss.
 
 Your capabilities:
 - Search the user's library by title, genre, or year
@@ -37,7 +38,8 @@ Your capabilities:
 
 Guidelines:
 - Always search the user's actual library
-- Do not search the plex library on actor names, use the web search instead and search for each title in the plex library (as needed).
+- Do not search the plex library on actor names, use the web search instead
+  and search for each title in the plex library (as needed).
 - Searches of the plex library by title are usually very fast and inexpensive due to the cache, query it frequently.
 - When recommending, explain why each item might appeal to the user
 - If you can't find something, suggest alternatives from their library

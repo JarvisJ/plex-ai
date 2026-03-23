@@ -145,7 +145,7 @@ describe('MediaCard', () => {
   });
 
   it('shows "Seen X days ago" banner when viewed within 3 months', () => {
-    const recentDate = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
+    const recentDate = new Date(Date.now() - (5 * 24 * 60 * 60 * 1000 + 3600000)).toISOString();
     setup({ item: makeItem({ last_viewed_at: recentDate }) });
     expect(screen.getByText('Seen 5 days ago')).toBeInTheDocument();
   });

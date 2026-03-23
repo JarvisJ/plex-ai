@@ -3,12 +3,11 @@
 These tools use the PlexClientService which provides caching for better performance.
 """
 
-from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
+from dotenv import load_dotenv
 from langchain_core.tools import tool
 from tavily import TavilyClient
-from dotenv import load_dotenv
 
 if TYPE_CHECKING:
     from app.services.plex_client import PlexClientService
